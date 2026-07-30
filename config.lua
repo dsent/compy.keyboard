@@ -449,14 +449,25 @@ SPACE_RAMP[4] = { 0.30, 0.10, 0.18 }
 -- the charred body of a rock that is already burning, and FLAME
 -- the head of the trail it drags.
 
--- A rock is lit at the rim and dark at the centre, so the black
--- cap it carries sits in a hollow of its own colour, and so
--- reads as set INTO the rock rather than stuck on its front.
+-- A rock is a lump lit from the upper left: ROCK_DIM is the
+-- shadow it is laid down in, ROCK the mid tone, ROCK_LIT the
+-- crown facing the light.
+--
+-- The socket the cap sits in is a graded descent, and it has to
+-- be: the cap is BLACK, so a single shadow ring around it is
+-- swallowed whole and the cap reads as laid on the surface. So
+-- the surface steps down through ROCK_SHADE (the chamfered
+-- wall) to ROCK_CORE (the floor) and only then to the cap --
+-- four tones a child's eye can count as depth. ROCK_EDGE
+-- catches the light on the far lip and fixes which way is down.
 
 STAR = { 1, 1, 1 }
-ROCK = { 0.54, 0.54, 0.58 }
-ROCK_LIT = { 0.65, 0.65, 0.69 }
-ROCK_CORE = { 0.13, 0.13, 0.16 }
+ROCK = { 0.38, 0.38, 0.42 }
+ROCK_DIM = { 0.26, 0.26, 0.30 }
+ROCK_LIT = { 0.52, 0.52, 0.56 }
+ROCK_SHADE = { 0.24, 0.24, 0.28 }
+ROCK_CORE = { 0.10, 0.10, 0.13 }
+ROCK_EDGE = { 0.70, 0.70, 0.74 }
 HULL = { 0.29, 0.56, 0.83 }
 DOME = { 0.75, 0.89, 0.98 }
 LAMP = { 0.96, 0.77, 0.26 }
@@ -567,8 +578,8 @@ FIELD_RAMP[4] = { 1.00, 0.40, 0.46 }
 -- it is aimed at, so it crosses at least half the width and its
 -- line is readable long before it arrives.
 
-DANGER_AIM_LO = 428
-DANGER_AIM_HI = 448
+DANGER_AIM_LO = 406
+DANGER_AIM_HI = 428
 DANGER_FAR = 0.55
 DANGER_CHANCE = 0.15
 DANGER_TRAIL = 7

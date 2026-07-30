@@ -235,15 +235,19 @@ function astroDrawCap(cap, color, alpha, scale)
   })
 end
 
--- A rock with its cap on top. A burning one is drawn by its own
--- shape and its own trail, so the two classes differ in kind
--- rather than in trim, and only the hostile one is marked.
+-- A rock, the socket cut into it, then the cap sitting in that
+-- socket. A burning one is drawn by its own shape and its own
+-- trail, so the two classes differ in kind rather than in trim,
+-- and only the hostile one is marked. Its cap rides proud on
+-- the spikes instead of sunk in a socket -- the spikes standing
+-- out past the cap's edges are what carry that silhouette.
 
 function astroDrawRock(cap)
   if cap.hostile then
     drawBurning(cap)
   else
     drawRock(cap.x, cap.y, STREAM_ROCK_R, cap.seed)
+    drawSocket(astroCapCell(cap))
   end
   astroDrawCap(cap, CAP_LABEL, 1)
 end
@@ -327,7 +331,7 @@ function astroGauge()
   local ink = GAUGE_SPACE_INK
   if streamFinishing() then ink = GAUGE_DONE_INK end
   return {
-    fill = STREAM.g, of = streamCfg().promote,
+    fill = STREAM.g, of = streamGoal(),
     rung = STREAM.level, rungs = streamCfg().lmax,
     ink = ink, glow = streamFinishing()
   }

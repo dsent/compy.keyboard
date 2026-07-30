@@ -33,6 +33,7 @@ STREAM = {
   g = 0,
   sink = 0,
   count = 0,
+  tax = 0,
   breaches = 0,
   lastx = nil,
   phase = "play",
@@ -53,11 +54,13 @@ STREAM_GAME = nil
 -- Falling caps are enlarged board caps: height in px, width
 -- from the board's letter-cap proportions. The rock under a cap
 -- is wider than the cap, and its radius is what has to clear
--- the force field.
+-- the force field. It runs wider than a whole cap-width: a rock
+-- only reads as a rock once there is visibly more rock than
+-- cap, and the socket the cap sits in eats some of that margin.
 
 STREAM_CAP = 56
 STREAM_CAP_W = math.floor(STREAM_CAP * KB_STD_W / KB_STD_H)
-STREAM_ROCK_R = STREAM_CAP_W * 0.82
+STREAM_ROCK_R = STREAM_CAP_W * 1.12
 STREAM_ROCK_D = STREAM_ROCK_R * 2
 
 -- Game-owned catch chime: win.ogg pitched up -- lighter than
@@ -383,12 +386,21 @@ function streamGrow()
   SOUND.win()
 end
 
+-- Rocks to clear for one level. Each replay of a finished game
+-- adds one, so a child who keeps pressing Enter gets a longer,
+-- flatter round every time and the game loses its pull on its
+-- own -- rather than being cut off by a rule.
+
+function streamGoal()
+  return streamCfg().promote + STREAM.tax
+end
+
 -- A demote keeps the gauge two-thirds full, so a child who just
 -- had a bad streak at a comfortable level climbs back quickly.
 
 function streamShrink()
   STREAM.level = STREAM.level - 1
-  STREAM.g = math.floor(streamCfg().promote * 2 / 3)
+  STREAM.g = math.floor(streamGoal() * 2 / 3)
 end
 
 -- The top-level win: celebratory tune + firework, then the
@@ -413,8 +425,8 @@ function streamFinish(after)
   STREAM.hold = STREAM_FINISH_HOLD
 end
 
--- A clean shot fills the gauge: below lmax, +promote raises the
--- level; at lmax, +promote opens the win screen. It also clears
+-- A clean shot fills the gauge: below lmax, a full gauge raises
+-- the level; at lmax it opens the win screen. It also clears
 -- the sunk count, so a child who recovers starts that tally
 -- again from nothing.
 
@@ -423,7 +435,7 @@ function streamGaugeUp()
   local cfg = streamCfg()
   STREAM.sink = 0
   STREAM.g = STREAM.g + 1
-  if STREAM.g < cfg.promote then return end
+  if STREAM.g < streamGoal() then return end
   if STREAM.level < cfg.lmax then
     streamFinish("level")
   else
@@ -704,6 +716,9 @@ function streamUpdate(dt)
   streamTickBurn(dt)
 end
 
+-- Everything a round owns. The replay tax is deliberately NOT
+-- here: it counts rounds, and a replay resets the round.
+
 function streamReset()
   STREAM.caps = { }
   STREAM.struck = { }
@@ -727,6 +742,7 @@ function streamEnter(game)
   STREAM_GAME = game
   STREAM.review = { }
   STREAM.order = { }
+  STREAM.tax = 0
   streamReset()
   streamBuildChars()
   fieldReset()
@@ -760,8 +776,25 @@ function streamAtLevel()
   return STREAM.phase == "level"
 end
 
+-- Enter on the win screen replays the LAST level, not the
+-- ladder below it: that ladder has been climbed, and making a
+-- child re-climb it to reach the part they came back for reads
+-- as a toll. The round is one rock longer each time, so repeat
+-- play flattens out by itself.
+
 function streamReplay()
   streamReset()
+  STREAM.tax = STREAM.tax + 1
+  STREAM.level = streamCfg().lmax
+end
+
+-- A fresh start: level 1 and no replay tax. That is what a
+-- notch change gets, because the ladder it restarts is a
+-- different ladder from the one that was climbed.
+
+function streamRestart()
+  streamReset()
+  STREAM.tax = 0
 end
 
 -- Win-screen keys: Enter replays this notch.
@@ -807,11 +840,12 @@ function streamOnNotch(delta)
   streamBuildChars()
   streamPaintSky()
   if not streamScoring() then
-    streamReplay()
+    streamRestart()
     return
   end
   STREAM.level = 1
   STREAM.g = 0
   STREAM.sink = 0
+  STREAM.tax = 0
   STREAM.recent = { }
 end

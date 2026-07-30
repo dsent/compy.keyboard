@@ -46,13 +46,11 @@ function SOUND.laser()
 end
 
 -- Anything reaching the force field: a cap nobody answered, or
--- a burning rock shot down onto it. One event, one sound. Short
--- and percussive: the shake and the flash on the arc carry the
--- weight, so the sound only has to mark the moment. A long
--- explosion here is frightening out of all proportion to what
--- happened.
+-- a burning rock shot down onto it. One event, one sound. It
+-- wants the shield resonating under a strike -- a low swell
+-- rather than a blow landing on something solid.
 function SOUND.impact()
-  sfx.punch()
+  sfx.blast()
 end
 
 -- Entering or leaving the modal pause: a soft toggle blip.

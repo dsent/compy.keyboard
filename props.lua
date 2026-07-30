@@ -193,32 +193,78 @@ function drawStars(w, h, n)
   end
 end
 
--- An asteroid: an eight-point polygon whose radii are jittered
--- from a seed, so every rock has its own outline. The lit core
--- is left plain, which is what a cap sits on.
+-- An asteroid: a twelve-point polygon whose radii are jittered
+-- from a seed, so every rock has its own outline. Twelve rather
+-- than eight because the cap has to sit inside the outline with
+-- room around it, and an octagon's long flat sides cut in too
+-- close to the cap's corners.
+
+-- The vertices wander in ANGLE as well as in radius. Angle is
+-- the cheap axis: it breaks the potato silhouette a plain
+-- radial jitter leaves behind without pulling any edge nearer
+-- the centre, and how close an edge comes to the centre is
+-- exactly what the socket has to live inside.
+
+ROCK_SIDES = 12
+ROCK_JITTER = 0.13
+ROCK_SKEW = 0.35
 
 function rockPoints(cx, cy, r, seed)
   local pts = { }
-  for i = 0, 7 do
-    local a = i * math.pi / 4
-    local j = 1 + 0.18 * math.sin(seed + i * 2.4)
+  local step = math.pi * 2 / ROCK_SIDES
+  for i = 0, ROCK_SIDES - 1 do
+    local s = math.sin(seed * 1.7 + i * 1.3)
+    local a = (i + ROCK_SKEW * s) * step
+    local j = 1 + ROCK_JITTER * math.sin(seed + i * 2.4)
     pts[#pts + 1] = cx + math.cos(a) * r * j
     pts[#pts + 1] = cy + math.sin(a) * r * j
   end
   return pts
 end
 
--- Lit rim, body, then a dark hollow at the centre. The cap the
--- rock carries is black, so it lands in that hollow and reads
--- as cut into the rock; a light centre made it look stuck on.
+-- Lit from the upper left: the whole outline goes down in
+-- shadow, then two smaller copies of it, each STEPPED toward
+-- the light, lay the mid tone and the lit crown over it.
+-- Stepping is what makes a lump -- copies left concentric read
+-- as a target, which is what the rings did before.
+
+ROCK_STEP = 0.10
 
 function drawRock(cx, cy, r, seed)
-  gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3])
+  local d = r * ROCK_STEP
+  gfx.setColor(ROCK_DIM[1], ROCK_DIM[2], ROCK_DIM[3])
   gfx.polygon("fill", rockPoints(cx, cy, r, seed))
   gfx.setColor(ROCK[1], ROCK[2], ROCK[3])
-  gfx.polygon("fill", rockPoints(cx, cy, r * 0.9, seed))
+  gfx.polygon("fill",
+    rockPoints(cx - d * 0.7, cy - d * 0.7, r * 0.93, seed))
+  gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3])
+  gfx.polygon("fill",
+    rockPoints(cx - d * 1.7, cy - d * 1.7, r * 0.8, seed))
+end
+
+-- The socket the cap drops into, drawn outside in: a lit lip
+-- stamped down and right, the chamfered wall over it, and the
+-- floor last. Against a BLACK cap a single shadow ring is
+-- swallowed and nothing reads, so the surface has to descend in
+-- steps a child can see -- surface, wall, floor, cap -- with
+-- the lit lip on the far side saying which way that goes.
+
+ROCK_SOCKET = 4
+ROCK_CHAMFER = 8
+ROCK_BEVEL = 4
+ROCK_ROUND = 9
+
+function drawSocket(cell)
+  local c, b, s = ROCK_CHAMFER, ROCK_BEVEL, ROCK_SOCKET
+  local x, y = cell.x - c, cell.y - c
+  local w, h = cell.w + c * 2, cell.h + c * 2
+  gfx.setColor(ROCK_EDGE[1], ROCK_EDGE[2], ROCK_EDGE[3])
+  gfx.rectangle("fill", x + b, y + b, w, h, ROCK_ROUND)
+  gfx.setColor(ROCK_SHADE[1], ROCK_SHADE[2], ROCK_SHADE[3])
+  gfx.rectangle("fill", x, y, w, h, ROCK_ROUND)
   gfx.setColor(ROCK_CORE[1], ROCK_CORE[2], ROCK_CORE[3])
-  gfx.polygon("fill", rockPoints(cx, cy, r * 0.8, seed))
+  gfx.rectangle("fill", cell.x - s, cell.y - s,
+    cell.w + s * 2, cell.h + s * 2, ROCK_ROUND)
 end
 
 -- A rock coming apart. p runs 0 at the moment of the hit to 1
