@@ -23,11 +23,14 @@ STREAM = {
   gone = { },
   review = { },
   order = { },
+  recent = { },
   chars = { },
   taught = { },
   wait = 0,
+  burn = nil,
   level = 1,
   g = 0,
+  sink = 0,
   count = 0,
   breaches = 0,
   lastx = nil,
@@ -156,15 +159,44 @@ function streamInFlight(ch)
   return false
 end
 
--- A key from the taught set that is not already falling, so two
--- caps in the sky never carry the same letter.
+-- The last few keys spawned are held back from the next spawn.
+-- Without it a key that got away came straight back, and kept
+-- coming back until it was answered. The window can never eat
+-- the whole set: what is in the sky needs candidates too.
+
+function streamRecentMax()
+  local room = #STREAM.chars - STREAM.level - 2
+  if room < STREAM_CFG.recent then
+    return math.max(0, room)
+  end
+  return STREAM_CFG.recent
+end
+
+function streamRecall(ch)
+  STREAM.recent[#STREAM.recent + 1] = ch
+  while streamRecentMax() < #STREAM.recent do
+    table.remove(STREAM.recent, 1)
+  end
+end
+
+function streamTaken(ch)
+  if streamInFlight(ch) then return true end
+  for _, k in ipairs(STREAM.recent) do
+    if k == ch then return true end
+  end
+  return false
+end
+
+-- A key from the taught set that is neither in the sky nor
+-- freshly used, so no two caps carry the same letter and none
+-- repeats on its own heels.
 
 function streamFreshChar()
   local n = #STREAM.chars
   local s = love.math.random(n)
   for j = 0, n - 1 do
     local ch = STREAM.chars[(s + j - 1) % n + 1]
-    if not streamInFlight(ch) then return ch end
+    if not streamTaken(ch) then return ch end
   end
   return STREAM.chars[s]
 end
@@ -172,7 +204,7 @@ end
 function streamReviewChar()
   local keys = { }
   for _, ch in ipairs(STREAM.order) do
-    if not streamInFlight(ch) then keys[#keys + 1] = ch end
+    if not streamTaken(ch) then keys[#keys + 1] = ch end
   end
   if #keys == 0 then return streamFreshChar() end
   return keys[love.math.random(#keys)]
@@ -183,10 +215,14 @@ end
 
 function streamPickChar()
   local due = #STREAM.order > 0
-  if due and love.math.random() < 0.5 then
-    return streamReviewChar()
+  local ch = nil
+  if due and love.math.random() < STREAM_CFG.review_p then
+    ch = streamReviewChar()
+  else
+    ch = streamFreshChar()
   end
-  return streamFreshChar()
+  streamRecall(ch)
+  return ch
 end
 
 -- Rocks are scattered across the width. A spawn keeps clear of
@@ -260,8 +296,10 @@ function streamSpawnHostile()
   local tx, ty = streamHostileAim()
   local x = streamHostileX(tx)
   local fall = streamCfg().fall
+  local ch = streamFreshChar()
+  streamRecall(ch)
   streamAddCap({
-    ch = streamFreshChar(),
+    ch = ch,
     x = x,
     y = STREAM_SPAWN_Y,
     vx = (tx - x) / fall,
@@ -293,10 +331,13 @@ function streamWin()
 end
 
 -- A clean shot fills the gauge: below lmax, +promote raises the
--- level; at lmax, +promote opens the win screen.
+-- level; at lmax, +promote opens the win screen. It also clears
+-- the sunk count, so a child who recovers starts that tally
+-- again from nothing.
 
 function streamGaugeUp()
   local cfg = streamCfg()
+  STREAM.sink = 0
   if STREAM.level < cfg.lmax then
     STREAM.g = STREAM.g + 1
     if STREAM.g >= cfg.promote then streamGrow() end
@@ -306,17 +347,22 @@ function streamGaugeUp()
   end
 end
 
--- A cap reaching the field drains it: -demote lowers the level
--- (above level 1); at level 1 it floors there, so there is no
--- failure state.
+-- A cap reaching the field drains the gauge, which stops at
+-- EMPTY: the next clean shot always moves it, whatever came
+-- before. Caps that arrive once it is already empty are counted
+-- instead, and `demote` of them lowers the level. At level 1
+-- there is nowhere to go, so nothing happens -- no failure
+-- state, as before.
 
 function streamGaugeDown()
-  STREAM.g = STREAM.g - 1
-  if STREAM.level > 1 then
-    if STREAM.g <= STREAM_CFG.demote then streamShrink() end
-  elseif STREAM.g < STREAM_CFG.demote then
-    STREAM.g = STREAM_CFG.demote
+  if 0 < STREAM.g then
+    STREAM.g = STREAM.g - 1
+    return
   end
+  STREAM.sink = STREAM.sink + 1
+  if STREAM.sink < STREAM_CFG.demote then return end
+  STREAM.sink = 0
+  if 1 < STREAM.level then streamShrink() end
 end
 
 -- A clean shot: the cap leaves the sky, the gauge climbs, and
@@ -342,6 +388,7 @@ function streamBreach(cap)
     ch = cap.ch, x = cap.x, y = cap.y, t = STREAM_GONE_T
   }
   fieldStrike(cap.x)
+  SOUND.breach()
   streamGaugeDown()
 end
 
@@ -427,19 +474,52 @@ function streamTickGone(dt)
   STREAM.gone = keep
 end
 
+-- Is there anything left to shoot? A burning rock is not: it
+-- was never ours to hit, so a sky holding only those is empty
+-- as far as the child is concerned.
+
+function streamShootable()
+  for _, c in ipairs(STREAM.caps) do
+    if not c.hostile and not c.dead then return true end
+  end
+  return false
+end
+
+-- A burning rock arrives in the MIDDLE of the gap between two
+-- ordinary ones, and only sometimes, so it comes out of the
+-- stream's order rather than alongside a cap to shoot.
+
+function streamArmBurn()
+  STREAM.burn = nil
+  if not STREAM_GAME.danger then return end
+  if love.math.random() >= DANGER_CHANCE then return end
+  STREAM.burn = STREAM.wait / 2
+end
+
+function streamTickBurn(dt)
+  if not STREAM.burn then return end
+  STREAM.burn = STREAM.burn - dt
+  if STREAM.burn > 0 then return end
+  STREAM.burn = nil
+  streamSpawnHostile()
+end
+
 -- One spawn per interval, and the interval is the fall time
 -- divided by the level -- which is the same statement as "the
--- level is how many caps are in the sky".
+-- level is how many caps are in the sky". Clearing the sky
+-- early brings the next one along instead of leaving a child
+-- watching nothing for the rest of the interval.
 
 function streamTickSpawn(dt)
   STREAM.wait = STREAM.wait - dt
+  local lull = STREAM_REFILL < STREAM.wait
+  if lull and not streamShootable() then
+    STREAM.wait = STREAM_REFILL
+  end
   if STREAM.wait > 0 then return end
   streamSpawnCap()
-  local burn = STREAM_GAME.danger
-  if burn and love.math.random() < DANGER_CHANCE then
-    streamSpawnHostile()
-  end
   STREAM.wait = streamCfg().fall / STREAM.level
+  streamArmBurn()
 end
 
 function streamUpdate(dt)
@@ -449,17 +529,21 @@ function streamUpdate(dt)
   if streamDone() then return end
   streamTickCaps(dt)
   streamTickSpawn(dt)
+  streamTickBurn(dt)
 end
 
 function streamReset()
   STREAM.caps = { }
   STREAM.gone = { }
+  STREAM.recent = { }
   STREAM.level = 1
   STREAM.g = 0
+  STREAM.sink = 0
   STREAM.count = 0
   STREAM.breaches = 0
   STREAM.lastx = nil
   STREAM.wait = 0
+  STREAM.burn = nil
   STREAM.phase = "play"
   STREAM.fw = { }
 end
@@ -510,4 +594,6 @@ function streamOnNotch(delta)
   end
   STREAM.level = 1
   STREAM.g = 0
+  STREAM.sink = 0
+  STREAM.recent = { }
 end

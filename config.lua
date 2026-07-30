@@ -121,9 +121,7 @@ MENU_ORDER = {
 -- carries the key set alone, start at the full set.
 
 NOTCH_START = {
-  bubble = -2,
-  astro = -2,
-  danger = -2
+  bubble = -2
 }
 
 -- Typewriter welcome timing. The heading is a fixed Latin
@@ -177,16 +175,35 @@ GAUGE_LOWN_BIAS = 4
 
 STREAM_SPAWN_Y = -70
 
--- Signed progression gauge, counted PER CAP: a clean shot adds
--- 1, a cap reaching the field subtracts 1. Reaching `promote`
--- raises the level a step, or at lmax opens the win screen;
--- reaching `demote` lowers it (never below 1). review_hits =
--- the correct presses that retire a key from review.
+-- Progression gauge, counted PER CAP: a clean shot adds 1, a
+-- cap reaching the field takes 1 away. Reaching `promote`
+-- raises the level a step, or at lmax opens the win screen.
+--
+-- The gauge stops at EMPTY. A gauge carrying a hidden negative
+-- reads as a game that stopped answering: several clean shots
+-- move nothing. Caps that reach the field while it is already
+-- empty are counted separately instead, and `demote` of them
+-- lowers the level; any clean shot clears that count.
+--
+-- review_hits = the correct presses that retire a key from
+-- review. review_p = how often a spawn is drawn from review
+-- rather than fresh, and `recent` is how many of the last keys
+-- spawned are held back -- together they are what stops a key
+-- that just got away coming straight back, over and over.
 
 STREAM_CFG = {
   review_hits = 1,
-  demote = -3
+  review_p = 0.4,
+  recent = 4,
+  demote = 3
 }
+
+-- Seconds to the next cap once the sky is empty. The cadence is
+-- the fall time over the level, but a child who clears
+-- everything early should get the next rock rather than an
+-- empty screen for the rest of the interval.
+
+STREAM_REFILL = 0.9
 
 -- Fall times (seconds, top edge to the field), tuned slow for
 -- 4-6 beginners: the fall time IS the window a child has to
@@ -478,12 +495,17 @@ FIELD_RAMP[2] = { 1.00, 0.90, 0.38 }
 FIELD_RAMP[3] = { 1.00, 0.62, 0.28 }
 FIELD_RAMP[4] = { 1.00, 0.40, 0.46 }
 
--- Dangerous Asteroids. A hostile rock is a burning one: a
--- charred, spiked body dragging a flame trail, crossing the
--- screen on a straight diagonal to a point on the far side low
--- enough that it passes OUTSIDE the field. The trail draws the
--- path it is on, so the child can see where it is going; take
--- the flame away and the crossing line still says it.
+-- Dangerous Asteroids. Everything Asteroids does, plus burning
+-- rocks: a charred, spiked body dragging a flame trail,
+-- crossing the screen on a straight diagonal to a point on the
+-- far side low enough that it passes OUTSIDE the field. The
+-- trail draws the path it is on, so the child can see where it
+-- is going; take the flame away and the crossing line still
+-- says it.
+--
+-- One arrives in the MIDDLE of the gap between two ordinary
+-- rocks, never alongside one, and only sometimes -- so it
+-- breaks the stream's rhythm instead of joining it.
 --
 -- Aim y is the band the arc's clearance table settles: at 428
 -- to 448 the rock centre clears the arc by 74 to 91 px against
@@ -497,7 +519,7 @@ FIELD_RAMP[4] = { 1.00, 0.40, 0.46 }
 DANGER_AIM_LO = 428
 DANGER_AIM_HI = 448
 DANGER_FAR = 0.55
-DANGER_CHANCE = 0.85
+DANGER_CHANCE = 0.5
 DANGER_TRAIL = 7
 DANGER_TRAIL_GAP = 0.55
 DANGER_SPIKES = 9

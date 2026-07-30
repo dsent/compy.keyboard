@@ -58,6 +58,7 @@ end
 
 function astroBolt(cap)
   GUN.bolt = { x = cap.x, y = cap.y, t = ASTRO_BOLT_T }
+  SOUND.laser()
 end
 
 function astroBurstAt(cap)
@@ -82,12 +83,19 @@ end
 -- clearest possible answer to why it should have been left
 -- alone. What the shot costs is a drained gauge, a knock and
 -- the long blank reload -- the price of firing at nothing.
+--
+-- One rock costs once. Firing at it again still wastes the
+-- reload, but the gauge is not drained twice for the same
+-- mistake; a LATER rock carrying the same key is a new one and
+-- charges again.
 
 function astroShootPast(cap)
   astroBolt(cap)
   astroBurstAt(cap)
   astroReload(ASTRO_RELOAD_MISS)
   SOUND.reject()
+  if cap.spent then return end
+  cap.spent = true
   streamGaugeDown()
 end
 
@@ -251,13 +259,9 @@ function astroDrawScene()
   astroDrawShip(sx)
 end
 
--- Caps cleared, in the light ink the space background needs.
-
-function astroDrawCount()
-  gfx.setFont(getFont(FONT_COUNT))
-  gfx.setColor(GAUGE_SPACE_INK)
-  gfx.printf(STREAM.count, 20, 16, 200, "left")
-end
+-- The gauge is the only score on screen. A running tally of
+-- rocks destroyed is a number to chase, which is not what these
+-- games ask a child to do.
 
 function astroDraw()
   if astroDone() then
@@ -268,7 +272,6 @@ function astroDraw()
   astroDrawScene()
   drawWinGauge(STREAM.g, streamCfg().promote,
     GAUGE_SPACE_INK)
-  astroDrawCount()
   fwDraw(STREAM)
   fkDrawExitHint()
 end

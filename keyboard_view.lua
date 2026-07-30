@@ -456,6 +456,40 @@ function drawKeyHint(name, text, band, color)
     y + KEYHINT_PAD / 2)
 end
 
+-- The same line for a key that needs a modifier held: the caps
+-- sit side by side, closer to each other than to the text, so
+-- they read as one chord rather than two choices.
+
+function chordHintW(keys, h)
+  local w = 0
+  for _, name in ipairs(keys) do
+    w = w + keyHintCapW(name, h)
+  end
+  return w + (#keys - 1) * KEYHINT_GAP / 2
+end
+
+function chordHintCaps(keys, x, y, h)
+  for _, name in ipairs(keys) do
+    local w = keyHintCapW(name, h)
+    drawKeycap({ x = x, y = y, w = w, h = h },
+      { name = name, unit = h / KB_STD_H })
+    x = x + w + KEYHINT_GAP / 2
+  end
+end
+
+function drawChordHint(keys, text, band, color)
+  local font = getFont(FONT_STATUS)
+  local h = font:getHeight() + KEYHINT_PAD
+  local cw = chordHintW(keys, h)
+  local x = keyHintX(cw, text, font)
+  local y = band[1] + (band[2] - band[1] - h) / 2
+  chordHintCaps(keys, x, y, h)
+  gfx.setFont(font)
+  gfx.setColor(color)
+  gfx.print(text, x + cw + KEYHINT_GAP,
+    y + KEYHINT_PAD / 2)
+end
+
 -- Glyph target cell (Alt): sized from the glyph itself.
 function kbTargetCell(label, font)
   local w = font:getWidth(label) + 28

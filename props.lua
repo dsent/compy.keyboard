@@ -150,13 +150,14 @@ function drawCar(x, y, u)
   propWheel(x + 11.6 * u, y - 2 * u, 1.3 * u)
 end
 
--- Smoke puffs drifting up and back from the stack. t is the
+-- Smoke puffs drifting up and BACK from the stack -- back being
+-- to the right, since the locomotive faces left. t is the
 -- caller's own clock, so the plume never resets.
 
 function smokePuff(x, y, i, t)
   local p = (t * 0.6 + i * 0.33) % 1
   gfx.setColor(SMOKE[1], SMOKE[2], SMOKE[3], 1 - p)
-  gfx.circle("fill", x - p * 26, y - p * 40, 3 + p * 9)
+  gfx.circle("fill", x + p * 26, y - p * 40, 3 + p * 9)
 end
 
 function drawSmoke(x, y, t)

@@ -122,23 +122,26 @@ function trainNextSlot()
   return math.min(#LOAD.cars + 1, trainPlatforms())
 end
 
--- A full train leaves. The last one of a level leaves under the
--- level screen's own celebration, so it does not sound twice.
+-- A full train leaves, and the gauge takes its unit as it
+-- pulls away rather than once it is gone -- otherwise the last
+-- train of a level fills the gauge on a screen nobody sees. The
+-- last one leaves under the level screen's own celebration, so
+-- it does not sound twice.
 
 function trainDepart()
   LOAD.phase = "depart"
   LOAD.t = 0
-  if TRAIN.hits + 1 < TRAIN.goal then SOUND.win() end
+  TRAIN.hits = TRAIN.hits + 1
+  if TRAIN.hits < TRAIN.goal then SOUND.win() end
 end
 
--- The train is gone: the gauge takes its unit, and either the
--- level ends here or the next train rolls in.
+-- The train is gone: either the level ends here or the next one
+-- rolls in behind it.
 
 function trainArrive()
   LOAD.cars = { }
   LOAD.phase = "arrive"
   LOAD.t = 0
-  TRAIN.hits = TRAIN.hits + 1
   if TRAIN.hits >= TRAIN.goal then
     gaugeWin(TRAIN, TRAIN_CFG)
     fkCelebrate(TRAIN)
@@ -245,17 +248,20 @@ function trainDrawCap(x, y, k)
   })
 end
 
--- The whole train moves as one: a departure accelerates it off
--- the right edge, and the next one rolls in from the left.
+-- The whole train moves as one, and it moves LEFT: the
+-- locomotive stands at the head of the consist with its cars
+-- behind it, so that is the way it faces. A departure
+-- accelerates it off the left edge and the next one rolls in
+-- from the right.
 
 function trainOffset()
   if LOAD.phase == "depart" then
     local f = LOAD.t / TRAIN_DEPART
-    return f * f * REF_W * 1.4
+    return -f * f * REF_W * 1.4
   end
   if LOAD.phase == "arrive" then
     local f = 1 - LOAD.t / TRAIN_ARRIVE
-    return -f * f * REF_W * 1.4
+    return f * f * REF_W * 1.4
   end
   return 0
 end

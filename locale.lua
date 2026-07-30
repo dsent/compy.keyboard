@@ -18,6 +18,7 @@ LOCALE.en = {
   tab_level = "→ next level",
   tab_more = "→ keep going",
   replay = "→ play again",
+  to_menu = "→ back to the menu",
   help_hint = "Hold Alt+H for help",
   back_hint = "Shift+Esc → menu",
   paused = "Paused",

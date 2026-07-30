@@ -142,16 +142,19 @@ function fkDrawExitHint()
   gfx.print(txt, 12, y)
 end
 
--- Hunt's completion screen: a calm compliment with Enter/R to
--- replay and Shift+Esc to return to the menu.
+-- The falling-caps completion screen: a calm compliment and two
+-- equal offers, each shown as the caps to press. Stopping is
+-- one of them -- a child who has just won is the one most
+-- likely to want to, and a dim line of prose does not tell a
+-- non-reader that.
 function fkDrawDoneScreen()
   gfx.setColor(COL_OVERLAY)
   gfx.rectangle("fill", 0, 0, REF_W, REF_H)
-  drawBandText(STR.good_job, { 140, 220 },
+  drawBandText(STR.good_job, { 120, 200 },
     getFont(FONT_HEAD), COL_WARM)
-  drawKeyHint("return", STR.replay, { 306, 346 }, COL_TEXT)
-  drawBandText(STR.back_hint, { 356, 396 },
-    getFont(FONT_STATUS), COL_DIM)
+  drawKeyHint("return", STR.replay, { 250, 300 }, COL_TEXT)
+  drawChordHint({ "lshift", "escape" }, STR.to_menu,
+    { 320, 370 }, COL_TEXT)
 end
 
 -- The gauge games' level-up screen: only the compliment and the
