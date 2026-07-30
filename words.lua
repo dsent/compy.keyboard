@@ -327,7 +327,7 @@ function wordsDraw()
   if WORDS.burst then drawBurst(WORDS.burst) end
   drawIndicators(CAPS_STATE.on)
   if done then
-    fkDrawLevelScreen(fkLevelTabLabel(WORDS_CFG))
+    fkDrawLevelScreen(fkLevelTabLabel(WORDS, WORDS_CFG))
   end
   fwDraw(WORDS)
 end

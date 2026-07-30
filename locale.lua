@@ -24,14 +24,13 @@ LOCALE.en = {
   games = {
     press = "Press the key",
     find = "Find the key",
-    hunt = "Hunt the falling objects",
+    astro = "Asteroids",
     alt = "Alt characters",
     words = "Words & phrases",
     bubble = "Blow the bubble",
-    skip = "Skip the red ones",
+    danger = "Dangerous asteroids",
     hide = "Hide and seek",
-    train = "Load the train",
-    astro = "Asteroids"
+    train = "Load the train"
   },
   help = {
     press = "Press the key that glows.\n\n"
@@ -40,10 +39,6 @@ LOCALE.en = {
     find = "Find the key shown above, then press it.\n\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
-    hunt = "Type each falling letter before it lands.\n\n"
-      .. "Alt+P  pause\n"
-      .. "Shift+Esc  back to the menu\n"
-      .. "Ctrl+Alt+↑ faster   Ctrl+Alt+↓ slower",
     alt = "Make the letter or symbol shown above.\n\n"
       .. "Hold Shift for capitals and symbols.\n"
       .. "Shift+Esc  back to the menu\n"
@@ -56,24 +51,26 @@ LOCALE.en = {
       .. "bubble.\nLet go while the bubble fits the ring.\n\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
-    skip = "Type the green keys before they land.\n"
-      .. "Leave the red ones alone.\n\n"
+    danger = "Shoot the rocks falling on the shield.\n"
+      .. "The burning ones fly past it -- let them go.\n"
+      .. "Shooting one wastes your shot.\n\n"
       .. "Alt+P  pause\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑ faster   Ctrl+Alt+↓ slower",
-    hide = "A key peeks out from behind the crate.\n"
-      .. "Press it while you see it, or from memory\n"
-      .. "just after it hides.\n\n"
+    hide = "Keys hide behind the crates. One peeks out\n"
+      .. "at a time, and you may press any of them,\n"
+      .. "shown or hidden. Take as long as you like.\n\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
-    train = "Press the key floating over the flatcar.\n"
-      .. "It rides away as cargo and the train grows.\n"
-      .. "Take as long as you like.\n\n"
+    train = "Press the key floating over the platform.\n"
+      .. "It rides down as cargo, and a full train\n"
+      .. "leaves. Take as long as you like.\n\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     astro = "Shoot the falling rocks by typing their\n"
-      .. "keys, in any order. The gun reloads after\n"
-      .. "every shot, and a miss reloads slower.\n\n"
+      .. "keys, in any order, before they reach the\n"
+      .. "shield. The gun reloads after every shot,\n"
+      .. "and a miss reloads slower.\n\n"
       .. "Alt+P  pause\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑ faster   Ctrl+Alt+↓ slower"

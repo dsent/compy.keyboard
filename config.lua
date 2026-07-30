@@ -105,20 +105,25 @@ KEYSETS.press_tab = { "tab" }
 -- Fixed menu order (ids). Display labels are localized in
 -- locale.lua.
 
+-- Asteroids takes the falling-caps slot Hunt held and Dangerous
+-- Asteroids takes Skip's, so every other game keeps the digit a
+-- run sheet already names.
+
 MENU_ORDER = {
-  "press", "find", "hunt", "alt", "words", "bubble", "skip",
-  "hide", "train", "astro"
+  "press", "find", "astro", "alt", "words", "bubble",
+  "danger", "hide", "train"
 }
 
 -- Per-game notch at program start. Unlisted games start at 0.
+-- The key-set ladder runs one way across the games: notch 0 is
+-- the full set, negative notches limit it. A game whose notch
+-- also carries speed starts eased; Hide and Train, whose notch
+-- carries the key set alone, start at the full set.
 
 NOTCH_START = {
-  hunt = -2,
   bubble = -2,
-  skip = -2,
-  hide = -2,
-  train = -2,
-  astro = -2
+  astro = -2,
+  danger = -2
 }
 
 -- Typewriter welcome timing. The heading is a fixed Latin
@@ -143,18 +148,13 @@ PRESS_NOTCH[-1] = { add = { "bottom_row" } }
 PRESS_NOTCH[0] = { add = { "top_row", "press_enter_back" } }
 PRESS_NOTCH[1] = { add = { "numbers", "press_tab" } }
 
--- The scene games set the cap on a prop, where it is drawn at
--- one fixed width. Space and the service keys are wide on the
--- real board and are known by that shape, so a fixed-width cap
--- shows space as a blank slab nobody can read. They stay in the
+-- A scene game sets the cap on a prop, where it is drawn at one
+-- fixed width. Space and the service keys are wide on the real
+-- board and are known by that shape, so a fixed-width cap shows
+-- space as a blank slab nobody can read. They stay in the
 -- keyboard games, which draw the board; the scenes teach the
--- letters and digits. Same ladder otherwise.
-
-SCENE_NOTCH = { }
-SCENE_NOTCH[-2] = { add = { "home_row" } }
-SCENE_NOTCH[-1] = { add = { "bottom_row" } }
-SCENE_NOTCH[0] = { add = { "top_row" } }
-SCENE_NOTCH[1] = { add = { "numbers" } }
+-- letters and digits, and each scene's own notch table below
+-- ladders that set.
 
 -- Press-count learning engine (gauge.lua). G is the review
 -- FLOOR: a level needs max(G, its mandatory count) first-try
@@ -170,54 +170,52 @@ ALT_G = 30
 ALT_GTOP = 45
 GAUGE_LOWN_BIAS = 4
 
--- Hunt the falling objects. Reference-canvas y bounds for the
--- fall, the rolling-window config, and the notch table (notch =
--- fall speed; wave length adapts within the notch's range).
+-- The falling-caps stream (stream.lua), which both Asteroids
+-- variants ride. Caps enter at the top edge and fall until they
+-- reach the force field; the y a cap enters at is here, and the
+-- line it stops at is the field arc below.
 
-HUNT_SPAWN_Y = 24
-HUNT_GROUND_Y = 492
+STREAM_SPAWN_Y = -70
 
--- Signed wave-length gauge: each catch adds 1, each miss
--- subtracts 1. Per-notch `promote` (reached) grows the wave
--- a length, or at lmax opens the win screen; `demote` (reached
--- above length 1) shrinks it. review_hits = the correct presses
--- to retire a missed key from review; gap = the pause between
--- waves (after a catch or a miss).
+-- Signed progression gauge, counted PER CAP: a clean shot adds
+-- 1, a cap reaching the field subtracts 1. Reaching `promote`
+-- raises the level a step, or at lmax opens the win screen;
+-- reaching `demote` lowers it (never below 1). review_hits =
+-- the correct presses that retire a key from review.
 
-HUNT_CFG = {
+STREAM_CFG = {
   review_hits = 1,
-  gap = 0.5,
   demote = -3
 }
 
--- Fall times (seconds top-to-bottom), tuned slow for 4-6
--- beginners. The notch sets speed + the length CEILING (lmax) +
--- the gauge `promote` threshold; the floor is always length 1,
--- so a longer wave is earned through the gauge, never forced.
--- The promotes keep catches-to-win (promote * lmax =
--- 12/12/24/30/36) short, since each catch is a multi-key wave
--- (keystrokes-to-win = promote * lmax(lmax+1)/2).
+-- Fall times (seconds, top edge to the field), tuned slow for
+-- 4-6 beginners: the fall time IS the window a child has to
+-- find one key, AND, divided by the level, the cadence caps
+-- arrive at -- so a long fall buys a generous window at the
+-- price of an empty sky between rocks. These keep the wait
+-- after a quick answer down to a breath. The notch sets that
+-- speed, the level CEILING (lmax) and the `promote` threshold;
+-- the floor is always level 1. Caps-to-win is promote * lmax
+-- (10/18/21/32/36), which is a minute and a half a notch.
 
-HUNT_NOTCH = { }
-HUNT_NOTCH[-2] = { fall = 30.0, lmax = 2, promote = 6 }
-HUNT_NOTCH[-1] = { fall = 24.0, lmax = 2, promote = 6 }
-HUNT_NOTCH[0] = { fall = 18.0, lmax = 3, promote = 8 }
-HUNT_NOTCH[1] = { fall = 14.0, lmax = 3, promote = 10 }
-HUNT_NOTCH[2] = { fall = 10.0, lmax = 3, promote = 12 }
+STREAM_NOTCH = { }
+STREAM_NOTCH[-2] = { fall = 9.0, lmax = 2, promote = 5 }
+STREAM_NOTCH[-1] = { fall = 8.0, lmax = 3, promote = 6 }
+STREAM_NOTCH[0] = { fall = 7.0, lmax = 3, promote = 7 }
+STREAM_NOTCH[1] = { fall = 5.5, lmax = 4, promote = 8 }
+STREAM_NOTCH[2] = { fall = 4.5, lmax = 4, promote = 9 }
 
--- Hunt characters: letters + digits only (no distinctive or
--- punctuation), from central + numbers + remaining_letters.
+-- The key set by notch, on the shared ladder: notch 0 is the
+-- full set (letters and digits) and the negative notches limit
+-- it by physical row. A notch ADDS its groups on top of the
+-- lower ones. The positive notches add no keys -- they raise
+-- difficulty through speed and the level ceiling instead.
 
-HUNT_CHARS = { }
-for _, k in ipairs(KEYSETS.central) do
-  HUNT_CHARS[#HUNT_CHARS + 1] = k
-end
-for _, k in ipairs(KEYSETS.numbers) do
-  HUNT_CHARS[#HUNT_CHARS + 1] = k
-end
-for _, k in ipairs(KEYSETS.remaining_letters) do
-  HUNT_CHARS[#HUNT_CHARS + 1] = k
-end
+STREAM_NOTCH[-2].add = { "home_row" }
+STREAM_NOTCH[-1].add = { "bottom_row" }
+STREAM_NOTCH[0].add = { "top_row", "numbers" }
+STREAM_NOTCH[1].add = { }
+STREAM_NOTCH[2].add = { }
 
 -- Alt characters. Press-count engine over produced GLYPHS, not
 -- physical keys. Five notches add ~15 new glyphs each, growing
@@ -382,17 +380,9 @@ BUBBLE_FLY_RISE = 70
 BUBBLE_POP_T = 0.3
 BUBBLE_POP_GROW = 0.6
 
--- Skip the red ones: the falling caps come in two classes. The
--- forbidden halo is full strength; the wanted one is
--- deliberately fainter (its alpha is baked in), so a red cap
--- reads first in a mixed row.
-
-SKIP_FORBID_COL = COL_RED
-SKIP_WANT_COL = { 0.16, 0.60, 0.32, 0.45 }
-
--- Scenery palette for the prop games (Hide, Train and later
--- Asteroids). Kept beside the chrome palette so every color
--- lives in one file; the props themselves are in props.lua.
+-- Scenery palette for the prop games. Kept beside the chrome
+-- palette so every color lives in one file; the props
+-- themselves are in props.lua.
 
 -- The sky over a scene reads the level as a time of day rather
 -- than as the chrome pastel, which would hang a green or yellow
@@ -416,7 +406,9 @@ SPACE_RAMP[3] = { 0.24, 0.10, 0.24 }
 SPACE_RAMP[4] = { 0.30, 0.10, 0.18 }
 
 -- Asteroids palette: rock, hull, dome, and the lamps that show
--- the charge. A dark lamp is the gun still reloading.
+-- the charge. A dark lamp is the gun still reloading. EMBER is
+-- the charred body of a rock that is already burning, and FLAME
+-- the head of the trail it drags.
 
 STAR = { 1, 1, 1 }
 ROCK = { 0.54, 0.54, 0.58 }
@@ -426,6 +418,16 @@ DOME = { 0.75, 0.89, 0.98 }
 LAMP = { 0.96, 0.77, 0.26 }
 LAMP_OFF = { 0.35, 0.33, 0.28 }
 BOLT = { 0.95, 0.35, 0.30 }
+EMBER = { 0.20, 0.16, 0.16 }
+EMBER_LIT = { 0.98, 0.55, 0.12 }
+FLAME = { 1.00, 0.93, 0.72 }
+SMOKE_TRAIL = { 0.42, 0.38, 0.40 }
+
+-- The win gauge is dark ink over the pale chrome, which sinks
+-- into a space background; the space scenes hand it this ink
+-- instead. Bright enough to read on the hottest nebula ramp.
+
+GAUGE_SPACE_INK = { 0.86, 0.95, 1.00 }
 
 -- Asteroids. The gun reloads after every shot; a blank costs
 -- longer than a hit, so hammering every key keeps the gun cold
@@ -439,13 +441,66 @@ ASTRO_SHAKE_T = 0.4
 ASTRO_SHAKE_PX = 9
 
 -- Scene geometry in reference pixels. Rocks keep clear of the
--- edges; the ship rides above the floor the engine drops caps
--- to, so a rock that lands has reached it.
+-- edges; the ship rides under the force field's apex, so the
+-- arc reads as the thing standing between it and the rocks.
 
-ASTRO_MARGIN = 40
+STREAM_MARGIN = 40
 ASTRO_GROUND_Y = 486
 ASTRO_SHIP_U = 5
 ASTRO_STARS = 60
+
+-- The force field: a shallow arc across almost the whole width,
+-- struck through three points -- (margin, edge y), (centre,
+-- apex y), (width - margin, edge y). Those give a circle of
+-- radius ~1108 centred ~988 px below the bottom of the screen,
+-- so what the screen shows is one slice of a sphere far too big
+-- to draw. props.lua derives the centre and radius from these.
+-- Tune the ENDPOINT height first: flattening the arc enlarges
+-- the sphere but brings the ends UP, which is the opposite of
+-- what a rock aimed past the field needs.
+
+FIELD_MARGIN = 20
+FIELD_APEX_Y = 420
+FIELD_EDGE_Y = 520
+FIELD_W = 7
+FIELD_GLOW = 16
+FIELD_HIT_T = 0.5
+
+-- The notch, carried in the field colour. The space ramp alone
+-- reads too subtly on device, so the arc takes the mild ->
+-- serious ladder the chrome pastel uses and the background only
+-- backs it up. One entry per notch of the -2..+2 ladder.
+
+FIELD_RAMP = { }
+FIELD_RAMP[0] = { 0.38, 0.96, 0.66 }
+FIELD_RAMP[1] = { 0.36, 0.84, 0.99 }
+FIELD_RAMP[2] = { 1.00, 0.90, 0.38 }
+FIELD_RAMP[3] = { 1.00, 0.62, 0.28 }
+FIELD_RAMP[4] = { 1.00, 0.40, 0.46 }
+
+-- Dangerous Asteroids. A hostile rock is a burning one: a
+-- charred, spiked body dragging a flame trail, crossing the
+-- screen on a straight diagonal to a point on the far side low
+-- enough that it passes OUTSIDE the field. The trail draws the
+-- path it is on, so the child can see where it is going; take
+-- the flame away and the crossing line still says it.
+--
+-- Aim y is the band the arc's clearance table settles: at 428
+-- to 448 the rock centre clears the arc by 74 to 91 px against
+-- its own radius of ~55, which is the "misses, just barely"
+-- reading. Aiming lower reaches the field; the bottom corner
+-- reaches it from every spawn position, so it is off the table.
+-- A hostile rock always starts on the FAR side from the point
+-- it is aimed at, so it crosses at least half the width and its
+-- line is readable long before it arrives.
+
+DANGER_AIM_LO = 428
+DANGER_AIM_HI = 448
+DANGER_FAR = 0.55
+DANGER_CHANCE = 0.85
+DANGER_TRAIL = 7
+DANGER_TRAIL_GAP = 0.55
+DANGER_SPIKES = 9
 
 HILL = { 0.55, 0.72, 0.48 }
 GROUND = { 0.45, 0.62, 0.38 }
@@ -465,58 +520,80 @@ SLEEPER = { 0.47, 0.36, 0.24 }
 SLEEPER_GAP = 26
 SMOKE = { 0.85, 0.85, 0.85 }
 
--- Hide and seek. A cap slides out from behind a crate, waits,
--- then slides back; the child may press it while it shows or
--- from memory after it has gone. The notch shortens the peek
--- and lengthens the memory window together, so a level asks
--- for more memory and less looking.
+-- Hide and seek. A ROTATION of keys is in play and any of them
+-- scores at any moment; only one is shown at a time, peeking
+-- from one of the crates. Untimed: the peek cycle drives what
+-- is VISIBLE and never expires an answer, so a child may take
+-- as long as they want.
+--
+-- The gauge goal is one unit per correct press, scaled to the
+-- rotation, since a bigger rotation is a bigger thing to hold.
 
-HIDE_G = 12
-HIDE_GTOP = 18
+HIDE_LO = -2
+HIDE_HI = 0
+HIDE_G_BASE = 4
+HIDE_G_STEP = 2
+
+-- The notch sets three things and nothing else: the peek-cycle
+-- timing, the glyph set, and the CEILINGS that progression
+-- fills up to. `show` is the seconds a glyph stands out and
+-- `away` the empty spell after it hides -- a higher notch
+-- shortens the first and lengthens the second, so a level asks
+-- for more memory and less looking. `rot` and `box` are the
+-- ceilings; `add` is the key-set ladder, full at notch 0.
+
+HIDE_NOTCH = { }
+HIDE_NOTCH[-2] = { show = 2.4, away = 0.5, rot = 3, box = 2,
+  add = { "home_row" } }
+HIDE_NOTCH[-1] = { show = 1.7, away = 0.9, rot = 4, box = 3,
+  add = { "bottom_row" } }
+HIDE_NOTCH[0] = { show = 1.1, away = 1.4, rot = 5, box = 4,
+  add = { "top_row", "numbers" } }
+
 HIDE_SLIDE = 0.35
-HIDE_GAP = 0.6
 
--- Seconds the cap stays out, by notch.
+-- Scene geometry in reference pixels. Crates stand along a
+-- shallow band of ground; a key slides out from behind one of
+-- them, leaving HIDE_CAP_LIP of itself covered so it still
+-- reads as coming from behind rather than standing free.
 
-HIDE_PEEK = { }
-HIDE_PEEK[-2] = 2.4
-HIDE_PEEK[-1] = 1.8
-HIDE_PEEK[0] = 1.3
-HIDE_PEEK[1] = 0.9
+HIDE_GROUND_Y = 360
+HIDE_BAND = 70
+HIDE_MARGIN = 120
+HIDE_CRATE_U = 13
+HIDE_CAP_H = 84
+HIDE_CAP_LIP = 16
+HIDE_HIT_T = 0.6
+HIDE_MARK_Y = 40
 
--- Seconds it can still be pressed after it has hidden.
+-- Load the train. A cap hovers over the next platform; press it
+-- and the cap settles onto the deck as cargo. A full train
+-- DEPARTS and an empty one arrives, which is what one unit of
+-- the gauge counts. Untimed throughout: the cap waits as long
+-- as the child needs, which is what makes this the game for the
+-- youngest.
 
-HIDE_MEMORY = { }
-HIDE_MEMORY[-2] = 1.2
-HIDE_MEMORY[-1] = 1.6
-HIDE_MEMORY[0] = 2.2
-HIDE_MEMORY[1] = 2.8
-
--- Scene geometry in reference pixels. The crate sits on the
--- ground line; the cap slides out to its right, keeping
--- HIDE_LIP hidden so it reads as coming from behind.
-
-HIDE_GROUND_Y = 392
-HIDE_CRATE_X = 300
-HIDE_CRATE_U = 15
-HIDE_CAP_H = 96
-HIDE_CAP_LIP = 18
-
--- Load the train. A cap hovers over the next flatcar; pressing
--- it lowers the cap onto the deck and the car rolls in, so the
--- train grows with every key learned. Type find on the
--- press-count engine, for the youngest players, so there is no
--- timer anywhere: the cap waits as long as the child needs.
-
-TRAIN_G = 10
-TRAIN_GTOP = 14
+TRAIN_LO = -3
+TRAIN_HI = 0
 TRAIN_LOAD = 0.4
-TRAIN_CARS = 5
+TRAIN_DEPART = 1.6
+TRAIN_ARRIVE = 1.2
+
+-- Progression sets the platform count: level L runs L + 1
+-- platforms, up to what the track holds. The notch sets the key
+-- set only, full at notch 0, and how many trains a level asks
+-- for -- a wider key set wants more trains to cover it.
+
+TRAIN_PLAT_MAX = 6
+TRAIN_NOTCH = { }
+TRAIN_NOTCH[-3] = { trains = 3, add = { "home_row" } }
+TRAIN_NOTCH[-2] = { trains = 3, add = { "bottom_row" } }
+TRAIN_NOTCH[-1] = { trains = 4, add = { "top_row" } }
+TRAIN_NOTCH[0] = { trains = 4, add = { "numbers" } }
 
 -- Scene geometry in reference pixels. The locomotive stands at
--- the left; cars fill in to its right, and once TRAIN_CARS are
--- coupled the oldest rolls off the front, so the train reads as
--- long without running off the screen.
+-- the left and platforms fill in to its right; TRAIN_PLAT_MAX
+-- is the last one whose car still fits the canvas.
 
 TRAIN_GROUND_Y = 404
 TRAIN_U = 6
@@ -524,3 +601,4 @@ TRAIN_LOCO_X = 96
 TRAIN_CAR_GAP = 14
 TRAIN_CAP_H = 60
 TRAIN_HOVER = 132
+TRAIN_HIT_T = 0.5

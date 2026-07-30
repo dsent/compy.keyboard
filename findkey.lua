@@ -56,13 +56,17 @@ function fkDone(st)
   return st.phase == "done"
 end
 
--- Tab on the level-up screen (gauge games): below the top notch
--- step up one notch into a fresh level; at the top, another
--- review level at the same notch (endless). Learning is kept.
+-- Tab on the level-up screen (gauge games): below the top step
+-- up into a fresh level; at the top, another review level at
+-- the same one (endless). Learning is kept. A scene whose
+-- progression is its own rather than the notch (Hide's
+-- rotation, Load the train's platforms) advances it here.
 function fkAdvance(st, cfg)
   st.fw = { }
   st.burst = nil
-  if gaugeAtTop(cfg) then
+  if cfg.advance then
+    cfg.advance(st, cfg)
+  elseif gaugeAtTop(st, cfg) then
     -- another review level at the same top notch
     gaugeStartLevel(st, cfg)
   else
@@ -71,9 +75,9 @@ function fkAdvance(st, cfg)
 end
 
 -- The gauge games' Tab label: step up a level, or keep playing
--- the endless review level at the top notch.
-function fkLevelTabLabel(cfg)
-  if gaugeAtTop(cfg) then
+-- the endless review level at the top.
+function fkLevelTabLabel(st, cfg)
+  if gaugeAtTop(st, cfg) then
     return STR.tab_more
   end
   return STR.tab_level
@@ -188,7 +192,9 @@ function fkDraw(st, cfg, deco, overlay)
   if st.burst then drawBurst(st.burst) end
   if not done then drawWinGauge(st.hits, st.goal) end
   drawIndicators(CAPS_STATE.on)
-  if done then fkDrawLevelScreen(fkLevelTabLabel(cfg)) end
+  if done then
+    fkDrawLevelScreen(fkLevelTabLabel(st, cfg))
+  end
   fwDraw(st)
   if not done then fkDrawExitHint() end
 end

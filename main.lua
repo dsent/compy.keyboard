@@ -74,14 +74,13 @@ dofile("menu.lua")
 
 SCENE_FILE.press = "press.lua"
 SCENE_FILE.find = "find.lua"
-SCENE_FILE.hunt = "hunt.lua"
+SCENE_FILE.astro = "astro.lua"
 SCENE_FILE.alt = "alt.lua"
 SCENE_FILE.words = "words.lua"
 SCENE_FILE.bubble = "bubble.lua"
-SCENE_FILE.skip = "skip.lua"
+SCENE_FILE.danger = "danger.lua"
 SCENE_FILE.hide = "hide.lua"
 SCENE_FILE.train = "train.lua"
-SCENE_FILE.astro = "astro.lua"
 
 notchInit()
 inputInit()

@@ -4,17 +4,19 @@
 -- than on the keyboard picture. Everything is drawn from
 -- primitives: no image assets, so a prop scales to any size,
 -- takes its colors from the palette, and costs a handful of
--- draw calls. Shared by Hide and, later, Train and Asteroids.
+-- draw calls. Shared by Hide, Load the train and Asteroids.
 
 -- A prop is placed by its bottom-left corner and sized by a
 -- unit u, so a caller states position and scale in one call.
 
--- A scene paints its own sky: the gauge has just set the chrome
--- pastel for the level, and this replaces it with the matching
--- sky. Call it after entering and after a notch change.
+-- A scene paints its own sky instead of the chrome pastel,
+-- which would hang a green or yellow sky over green grass. The
+-- step is the CHILD's level: a level earned moves the day
+-- along, while the teacher's notch is read off the keys.
 
-function skyLevel(cfg)
-  pastelSetTarget(SKY_RAMP[notchGet(cfg.id) - cfg.lo])
+function skyLevel(level)
+  local i = math.min(level, #SKY_RAMP)
+  pastelSetTarget(SKY_RAMP[i])
 end
 
 -- Rolling hills along the ground line: three flattened
@@ -53,8 +55,8 @@ function crateBoards(x, y, u)
     1.6 * u, 3.3 * u)
 end
 
--- A crate, 10u square, standing on (x, y). Its right edge is
--- straight, which is what a cap slides out from behind.
+-- A crate, 10u square, standing on (x, y). A cap slides out
+-- from behind whichever of its edges the peek picked.
 
 function drawCrate(x, y, u)
   gfx.setColor(WOOD[1], WOOD[2], WOOD[3])
@@ -198,6 +200,164 @@ function drawRock(cx, cy, r, seed)
   gfx.polygon("fill", rockPoints(cx, cy, r, seed))
   gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3])
   gfx.polygon("fill", rockPoints(cx, cy, r * 0.72, seed))
+end
+
+-- The force field. Three points fix it -- an end at each screen
+-- margin and the apex in the middle -- and the circle through
+-- them is enormous and centred far below the bottom edge, so
+-- the arc on screen is one slice of a sphere the screen never
+-- shows. The line is cached: it never moves.
+
+FIELD = { hits = { } }
+FIELD_HALF = REF_W / 2 - FIELD_MARGIN
+FIELD_DROP = FIELD_EDGE_Y - FIELD_APEX_Y
+FIELD_CY = FIELD_APEX_Y + (FIELD_HALF * FIELD_HALF
+  + FIELD_DROP * FIELD_DROP) / (2 * FIELD_DROP)
+FIELD_R = FIELD_CY - FIELD_APEX_Y
+FIELD_STEPS = 48
+FIELD_LINE = nil
+
+function fieldY(x)
+  local dx = x - REF_W / 2
+  local under = FIELD_R * FIELD_R - dx * dx
+  if under <= 0 then return REF_H end
+  return FIELD_CY - math.sqrt(under)
+end
+
+function fieldPoints()
+  local pts = { }
+  local span = REF_W - 2 * FIELD_MARGIN
+  for i = 0, FIELD_STEPS do
+    local x = FIELD_MARGIN + span * i / FIELD_STEPS
+    pts[#pts + 1] = x
+    pts[#pts + 1] = fieldY(x)
+  end
+  return pts
+end
+
+function fieldReset()
+  FIELD.hits = { }
+  FIELD_LINE = fieldPoints()
+end
+
+-- The arc is drawn in four passes, widest and faintest first,
+-- down to a white core, so it reads as a sheet of energy rather
+-- than as a stroked line. The colour is the notch.
+
+function drawFieldArc(col)
+  gfx.setColor(col[1], col[2], col[3], 0.10)
+  gfx.setLineWidth(FIELD_W + FIELD_GLOW * 2)
+  gfx.line(FIELD_LINE)
+  gfx.setColor(col[1], col[2], col[3], 0.22)
+  gfx.setLineWidth(FIELD_W + FIELD_GLOW)
+  gfx.line(FIELD_LINE)
+  gfx.setColor(col[1], col[2], col[3], 0.85)
+  gfx.setLineWidth(FIELD_W)
+  gfx.line(FIELD_LINE)
+  gfx.setColor(1, 1, 1, 0.5)
+  gfx.setLineWidth(2)
+  gfx.line(FIELD_LINE)
+  gfx.setLineWidth(1)
+end
+
+-- A rock reaching the field lights it where it struck, so a
+-- breach is something the child watches the field take.
+
+function fieldStrike(x)
+  FIELD.hits[#FIELD.hits + 1] = { x = x, t = FIELD_HIT_T }
+end
+
+function fieldTick(dt)
+  local keep = { }
+  for _, h in ipairs(FIELD.hits) do
+    h.t = h.t - dt
+    if h.t > 0 then keep[#keep + 1] = h end
+  end
+  FIELD.hits = keep
+end
+
+function fieldBloom(h, col)
+  local a = h.t / FIELD_HIT_T
+  local r = 26 + (1 - a) * 74
+  local y = fieldY(h.x)
+  gfx.setColor(col[1], col[2], col[3], a * 0.5)
+  gfx.circle("fill", h.x, y, r)
+  gfx.setColor(1, 1, 1, a * 0.7)
+  gfx.circle("fill", h.x, y, r * 0.35)
+end
+
+function drawField(level)
+  local col = FIELD_RAMP[level] or FIELD_RAMP[0]
+  drawFieldArc(col)
+  for _, h in ipairs(FIELD.hits) do
+    fieldBloom(h, col)
+  end
+end
+
+-- A burning rock: a charred, SPIKED body dragging a flame trail
+-- back along the line it is travelling. The spikes are a
+-- different silhouette rather than a ring around the same one,
+-- and the trail draws the path, so a child can see where the
+-- rock is going. Nothing here asks anyone to tell red from
+-- green, and with the flame taken away the star and the
+-- crossing line still say which rock this is.
+
+function spikePoints(cx, cy, r, seed)
+  local pts = { }
+  for i = 0, DANGER_SPIKES * 2 - 1 do
+    local a = i * math.pi / DANGER_SPIKES
+    local out = 1.0
+    if i % 2 == 1 then out = 0.44 end
+    local j = out - 0.08 + 0.08 * math.sin(seed + i * 1.7)
+    pts[#pts + 1] = cx + math.cos(a) * r * j
+    pts[#pts + 1] = cy + math.sin(a) * r * j
+  end
+  return pts
+end
+
+-- Trail colours run hot at the rock and cool into smoke behind
+-- it, so the head of the trail says which way it is headed.
+
+function trailColor(f)
+  if f < 0.35 then return FLAME end
+  if f < 0.7 then return EMBER_LIT end
+  return SMOKE_TRAIL
+end
+
+function trailPuff(cap, i, n)
+  local d = STREAM_ROCK_R * DANGER_TRAIL_GAP * i
+  local s = math.sqrt(cap.vx * cap.vx + cap.vy * cap.vy)
+  if s <= 0 then s = 1 end
+  return cap.x - cap.vx / s * d, cap.y - cap.vy / s * d,
+    STREAM_ROCK_R * (0.74 - 0.5 * i / n)
+end
+
+function drawTrail(cap)
+  local n = DANGER_TRAIL
+  for i = n, 1, -1 do
+    local x, y, r = trailPuff(cap, i, n)
+    local col = trailColor(i / n)
+    gfx.setColor(col[1], col[2], col[3], 0.8 * (1 - i / n))
+    gfx.circle("fill", x, y, r)
+  end
+end
+
+-- The star is drawn BRIGHT and the charred core dark, because
+-- the cap covers the core: what has to carry the silhouette is
+-- the ring of spikes standing out past the cap's edges, and
+-- against space those only read if they glow.
+
+function drawBurning(cap)
+  drawTrail(cap)
+  gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3], 0.35)
+  gfx.polygon("fill", spikePoints(cap.x, cap.y,
+    STREAM_ROCK_R * 1.16, cap.seed))
+  gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3])
+  gfx.polygon("fill",
+    spikePoints(cap.x, cap.y, STREAM_ROCK_R, cap.seed))
+  gfx.setColor(EMBER[1], EMBER[2], EMBER[3])
+  gfx.polygon("fill", spikePoints(cap.x, cap.y,
+    STREAM_ROCK_R * 0.62, cap.seed))
 end
 
 -- The saucer's three lamps ARE the charge meter: they go out on

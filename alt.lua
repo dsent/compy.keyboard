@@ -300,7 +300,7 @@ function altDraw()
   if ALT.burst then drawBurst(ALT.burst) end
   drawIndicators(CAPS_STATE.on)
   if done then
-    fkDrawLevelScreen(fkLevelTabLabel(ALT_CFG))
+    fkDrawLevelScreen(fkLevelTabLabel(ALT, ALT_CFG))
   end
   fwDraw(ALT)
 end

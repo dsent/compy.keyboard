@@ -521,8 +521,9 @@ end
 -- Subtle win-gauge: a vertical thermometer in the right margin
 -- (the left edge is clipped on current hardware), filling
 -- bottom-up as the set is cleared. Clear of the bottom hints
--- and the lock cluster. Dark ink reads over every pastel.
--- Reused by the round-gauge exercises.
+-- and the lock cluster. Dark ink reads over every pastel; a
+-- scene played against a dark background passes its own light
+-- ink instead, so there is one gauge rather than two.
 WGAUGE_W = 8
 
 function winGaugeFrac(cleared, total)
@@ -533,14 +534,21 @@ function winGaugeFrac(cleared, total)
   return f
 end
 
-function drawWinGauge(cleared, total)
+function winGaugeTrough(c, x, y0, h)
+  gfx.setColor(c[1], c[2], c[3], 0.2)
+  gfx.rectangle("fill", x, y0, WGAUGE_W, h, 4)
+  gfx.setColor(c[1], c[2], c[3], 0.5)
+  gfx.setLineWidth(1)
+  gfx.rectangle("line", x, y0, WGAUGE_W, h, 4)
+end
+
+function drawWinGauge(cleared, total, ink)
   local f = winGaugeFrac(cleared, total)
   local x = REF_W - 16
   local y0 = KBAND_Y0
   local h = KBAND_Y1 - KBAND_Y0
-  local c = COL_KEY_LABEL
-  gfx.setColor(c[1], c[2], c[3], 0.18)
-  gfx.rectangle("fill", x, y0, WGAUGE_W, h, 4)
-  gfx.setColor(c[1], c[2], c[3], 0.85)
+  local c = ink or COL_KEY_LABEL
+  winGaugeTrough(c, x, y0, h)
+  gfx.setColor(c[1], c[2], c[3], 0.9)
   gfx.rectangle("fill", x, y0 + h * (1 - f), WGAUGE_W, h * f, 4)
 end
