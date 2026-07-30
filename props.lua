@@ -172,16 +172,23 @@ function drawSmoke(x, y, t)
 end
 
 -- Star field: positions come from the index alone, so the sky
--- is fixed and never shimmers between frames.
+-- is fixed and never wanders. Only the brightness moves, slowly
+-- and each star on its own phase, so the sky breathes without
+-- anything in it drawing the eye away from the rocks.
 
 function starAt(i, w, h)
   return (i * 73.7) % w, (i * 41.3) % (h * 0.8)
 end
 
+function starAlpha(i, t)
+  return 0.72 + 0.28 * math.sin(t * 0.8 + i * 1.7)
+end
+
 function drawStars(w, h, n)
-  gfx.setColor(STAR[1], STAR[2], STAR[3])
+  local t = love.timer.getTime()
   for i = 1, n do
     local x, y = starAt(i, w, h)
+    gfx.setColor(STAR[1], STAR[2], STAR[3], starAlpha(i, t))
     gfx.circle("fill", x, y, (i % 3) * 0.4 + 0.7)
   end
 end
@@ -201,11 +208,17 @@ function rockPoints(cx, cy, r, seed)
   return pts
 end
 
+-- Lit rim, body, then a dark hollow at the centre. The cap the
+-- rock carries is black, so it lands in that hollow and reads
+-- as cut into the rock; a light centre made it look stuck on.
+
 function drawRock(cx, cy, r, seed)
-  gfx.setColor(ROCK[1], ROCK[2], ROCK[3])
-  gfx.polygon("fill", rockPoints(cx, cy, r, seed))
   gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3])
-  gfx.polygon("fill", rockPoints(cx, cy, r * 0.72, seed))
+  gfx.polygon("fill", rockPoints(cx, cy, r, seed))
+  gfx.setColor(ROCK[1], ROCK[2], ROCK[3])
+  gfx.polygon("fill", rockPoints(cx, cy, r * 0.9, seed))
+  gfx.setColor(ROCK_CORE[1], ROCK_CORE[2], ROCK_CORE[3])
+  gfx.polygon("fill", rockPoints(cx, cy, r * 0.8, seed))
 end
 
 -- A rock coming apart. p runs 0 at the moment of the hit to 1
@@ -233,7 +246,7 @@ function blastFlash(b, p)
   local f = 1 - p / 0.35
   local c = blastHue(b)
   local w = 1
-  if b.bad then w = 1.6 end
+  if b.bad then w = 1.35 end
   gfx.setColor(c[1], c[2], c[3], f * f * 0.9)
   gfx.circle("fill", b.x, b.y,
     STREAM_ROCK_R * (1.2 + (1 - f) * 0.9) * w)
@@ -254,8 +267,12 @@ function blastShard(b, i, p)
     b.y + math.sin(a) * d, r, b.seed + i))
 end
 
+function blastAge(b)
+  return 1 - b.t / b.span
+end
+
 function drawBlast(b)
-  local p = 1 - b.t / ASTRO_BLAST_T
+  local p = blastAge(b)
   blastFlash(b, p)
   gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3], 1 - p)
   for i = 1, ASTRO_BLAST_SHARDS do
@@ -413,16 +430,28 @@ end
 -- the ring of spikes standing out past the cap's edges, and
 -- against space those only read if they glow.
 
+-- The glow BREATHES rather than sitting there: a static ring
+-- around an object reads as trim, and the whole point of this
+-- rock is that it is a different kind of thing. Each one is on
+-- its own phase, so a sky of them does not pulse in step.
+
+function burnGlow(cap)
+  local t = love.timer.getTime() * 6 + cap.seed
+  local p = 0.5 + 0.5 * math.sin(t)
+  gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3],
+    0.22 + 0.3 * p)
+  gfx.polygon("fill",
+    spikePoints(cap, STREAM_ROCK_R * (1.1 + 0.16 * p)))
+end
+
 function drawBurning(cap)
   drawTrail(cap)
-  gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3], 0.35)
-  gfx.polygon("fill",
-    spikePoints(cap, STREAM_ROCK_R * 1.16))
+  burnGlow(cap)
   gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3])
   gfx.polygon("fill", spikePoints(cap, STREAM_ROCK_R))
   gfx.setColor(EMBER[1], EMBER[2], EMBER[3])
   gfx.polygon("fill",
-    spikePoints(cap, STREAM_ROCK_R * 0.62))
+    spikePoints(cap, STREAM_ROCK_R * 0.8))
 end
 
 -- The saucer's three lamps ARE the charge meter: they go out on

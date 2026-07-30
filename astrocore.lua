@@ -75,7 +75,21 @@ end
 function astroBlastAt(cap)
   GUN.blasts[#GUN.blasts + 1] = {
     x = cap.x, y = cap.y, ch = cap.ch,
-    seed = cap.seed, t = ASTRO_BLAST_T
+    seed = cap.seed, t = ASTRO_BLAST_T,
+    span = ASTRO_BLAST_T
+  }
+end
+
+-- A rock that struck the shield: the same wreckage, but red,
+-- wider and lasting longer, because its cap has to stay
+-- readable while it fades -- that letter is the one just booked
+-- into review.
+
+function astroImpactAt(cap)
+  GUN.blasts[#GUN.blasts + 1] = {
+    x = cap.x, y = cap.y, ch = cap.ch,
+    seed = cap.seed, t = ASTRO_IMPACT_T,
+    span = ASTRO_IMPACT_T, bad = true
   }
 end
 
@@ -121,6 +135,7 @@ function astroKeypressed(k)
     streamLevelKey(k)
     return
   end
+  if not streamLive() then return end
   if not astroReady() then return end
   local cap = streamFindCap(k)
   if cap and cap.hostile then
@@ -157,30 +172,21 @@ function astroTickBlasts(dt)
   end
 end
 
--- A rock the field has to stop shoves the saucer under it; the
--- stream has already booked the breach, so this only reacts to
--- its tally of them moving.
+-- Anything the engine records as reaching the shield leaves its
+-- position behind; the scene turns each into an impact where it
+-- landed, and the saucer under it rocks.
 
--- A wreck the engine brought down leaves its position behind;
--- the scene turns each into a blast where it struck, bigger and
--- redder than a rock coming apart under the gun, because this
--- one is the shield taking a hit the child caused.
-
-function astroTakeWrecks()
-  for _, w in ipairs(STREAM.wrecks) do
-    astroBlastAt(w)
-    GUN.blasts[#GUN.blasts].bad = true
+function astroTakeStruck()
+  for _, w in ipairs(STREAM.struck) do
+    astroImpactAt(w)
+    GUN.shake = ASTRO_SHAKE_T
   end
-  STREAM.wrecks = { }
+  STREAM.struck = { }
 end
 
 function astroUpdate(dt)
-  local before = STREAM.breaches
   streamUpdate(dt)
-  if before < STREAM.breaches then
-    GUN.shake = ASTRO_SHAKE_T
-  end
-  astroTakeWrecks()
+  astroTakeStruck()
   astroTickGun(dt)
   astroTickBursts(dt)
   astroTickBlasts(dt)
@@ -200,7 +206,7 @@ end
 -- Neither end screen wants the help hint over it.
 
 function astroIdle()
-  return not streamPlaying()
+  return not streamLive()
 end
 
 -- Drawing
@@ -248,39 +254,18 @@ function astroDrawStream()
   end
 end
 
--- The letter that got away stays readable: the ring expands
--- AROUND the cap and the cap is drawn over it, so the glyph
--- just booked into review is never hidden by its own burst.
-
-function astroDrawGone(g)
-  local a = g.t / STREAM_GONE_T
-  gfx.setColor(COL_RED[1], COL_RED[2], COL_RED[3], a)
-  gfx.setLineWidth(4)
-  gfx.circle("line", g.x, g.y,
-    STREAM_ROCK_R + (1 - a) * 46)
-  gfx.setLineWidth(1)
-  astroDrawCap(g, COL_RED, a)
-end
-
-function astroDrawLost()
-  for _, g in ipairs(STREAM.gone) do
-    astroDrawGone(g)
-  end
-end
-
 -- The wreckage, then the cap over it: the letter grows and
--- fades out of its own explosion, so what the child cleared is
--- what they are left looking at.
-
--- The cap clears in the first half of the blast, so the letter
--- is read and then gone rather than sitting over the wreckage
--- for the whole of it.
+-- fades out of its own explosion, so what the child cleared --
+-- or lost -- is what they are left looking at. It clears well
+-- before the wreckage does, rather than sitting over it.
 
 function astroDrawBlast(b)
-  local p = 1 - b.t / ASTRO_BLAST_T
+  local p = blastAge(b)
+  local ink = CAP_LABEL
+  if b.bad then ink = COL_RED end
   drawBlast(b)
-  if p >= 0.5 then return end
-  astroDrawCap(b, CAP_LABEL, 1 - p * 2, 1 + p * 0.8)
+  if p >= 0.7 then return end
+  astroDrawCap(b, ink, 1 - p / 0.7, 1 + p * 0.8)
 end
 
 function astroDrawBlasts()
@@ -323,7 +308,6 @@ function astroDrawScene()
   astroDrawStream()
   drawField(streamColorLevel())
   astroDrawBlasts()
-  astroDrawLost()
   astroDrawBursts()
   if GUN.bolt then astroDrawBolt(sx) end
   astroDrawShip(sx)
@@ -335,11 +319,17 @@ end
 -- notch, so the whole climb is visible rather than just the
 -- stretch under way.
 
+-- Once the gauge is full the level is finishing: it turns green
+-- and glows, so the thing that was counting is also the thing
+-- that says "you have it -- clear the sky".
+
 function astroGauge()
+  local ink = GAUGE_SPACE_INK
+  if streamFinishing() then ink = GAUGE_DONE_INK end
   return {
     fill = STREAM.g, of = streamCfg().promote,
     rung = STREAM.level, rungs = streamCfg().lmax,
-    ink = GAUGE_SPACE_INK
+    ink = ink, glow = streamFinishing()
   }
 end
 
@@ -353,5 +343,5 @@ function astroDraw()
   drawWinGauge(astroGauge())
   if streamAtLevel() then fkDrawLevelScreen() end
   fwDraw(STREAM)
-  if streamPlaying() then fkDrawExitHint() end
+  if streamLive() then fkDrawExitHint() end
 end

@@ -619,12 +619,27 @@ function winGaugeTicks(g, x, y0, h)
   end
 end
 
+-- A gauge that has something to say beyond its reading: three
+-- soft frames spreading outward, so it can be noticed without
+-- being read.
+
+function winGaugeGlow(g, x, y0, h)
+  if not g.glow then return end
+  local c = g.ink or COL_KEY_LABEL
+  for i = 1, 3 do
+    gfx.setColor(c[1], c[2], c[3], 0.13)
+    gfx.rectangle("fill", x - i * 4, y0 - i * 4,
+      WGAUGE_W + i * 8, h + i * 8, 6)
+  end
+end
+
 function drawWinGauge(g)
   local f = winGaugeSpan(g)
   local x = REF_W - 16
   local y0 = KBAND_Y0
   local h = KBAND_Y1 - KBAND_Y0
   local c = g.ink or COL_KEY_LABEL
+  winGaugeGlow(g, x, y0, h)
   winGaugeTrough(c, x, y0, h)
   gfx.setColor(c[1], c[2], c[3], 0.9)
   gfx.rectangle("fill", x, y0 + h * (1 - f), WGAUGE_W, h * f, 4)

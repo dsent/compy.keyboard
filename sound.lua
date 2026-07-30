@@ -45,21 +45,14 @@ function SOUND.laser()
   sfx.pew()
 end
 
--- A rock reaching the force field. The shake and the flash on
--- the arc carry the event; the sound only has to mark it, so it
--- is the same short neutral knock everything else uses. An
+-- Anything reaching the force field: a cap nobody answered, or
+-- a burning rock shot down onto it. One event, one sound. Short
+-- and percussive: the shake and the flash on the arc carry the
+-- weight, so the sound only has to mark the moment. A long
 -- explosion here is frightening out of all proportion to what
--- happened, which is that one letter got away.
-function SOUND.breach()
-  sfx.knock()
-end
-
--- A rock shot down crashing into the shield it was going to
--- miss. This one is loud: the whole point is that the child
--- caused it, and a knock reads as too small a thing for the
--- mistake it reports.
-function SOUND.crash()
-  sfx.boom()
+-- happened.
+function SOUND.impact()
+  sfx.punch()
 end
 
 -- Entering or leaving the modal pause: a soft toggle blip.

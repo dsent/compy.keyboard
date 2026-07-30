@@ -20,11 +20,10 @@ ensureFile("props.lua")
 
 STREAM = {
   caps = { },
-  gone = { },
+  struck = { },
   review = { },
   order = { },
   recent = { },
-  wrecks = { },
   chars = { },
   taught = { },
   wait = 0,
@@ -37,6 +36,8 @@ STREAM = {
   breaches = 0,
   lastx = nil,
   phase = "play",
+  after = nil,
+  hold = 0,
   fw = { }
 }
 
@@ -58,7 +59,6 @@ STREAM_CAP = 56
 STREAM_CAP_W = math.floor(STREAM_CAP * KB_STD_W / KB_STD_H)
 STREAM_ROCK_R = STREAM_CAP_W * 0.82
 STREAM_ROCK_D = STREAM_ROCK_R * 2
-STREAM_GONE_T = 0.8
 
 -- Game-owned catch chime: win.ogg pitched up -- lighter than
 -- correct.ogg and brighter, which conveys speed. EVERY hit
@@ -400,20 +400,34 @@ function streamWin()
   STREAM.phase = "done"
 end
 
+-- Filling the gauge does not end the level on the spot. It
+-- stops the spawner and lets the child clear whatever is still
+-- in the sky first -- otherwise the shot that won it is never
+-- seen landing, the screen having replaced the beam and the
+-- explosion on the very frame of the key press. Nothing scores
+-- either way from here, so the sky can be finished at leisure.
+
+function streamFinish(after)
+  STREAM.after = after
+  STREAM.phase = "finish"
+  STREAM.hold = STREAM_FINISH_HOLD
+end
+
 -- A clean shot fills the gauge: below lmax, +promote raises the
 -- level; at lmax, +promote opens the win screen. It also clears
 -- the sunk count, so a child who recovers starts that tally
 -- again from nothing.
 
 function streamGaugeUp()
+  if not streamScoring() then return end
   local cfg = streamCfg()
   STREAM.sink = 0
+  STREAM.g = STREAM.g + 1
+  if STREAM.g < cfg.promote then return end
   if STREAM.level < cfg.lmax then
-    STREAM.g = STREAM.g + 1
-    if STREAM.g >= cfg.promote then streamGrow() end
-  elseif STREAM.g < cfg.promote then
-    STREAM.g = STREAM.g + 1
-    if STREAM.g >= cfg.promote then streamWin() end
+    streamFinish("level")
+  else
+    streamFinish("done")
   end
 end
 
@@ -425,6 +439,7 @@ end
 -- state, as before.
 
 function streamGaugeDown()
+  if not streamScoring() then return end
   if 0 < STREAM.g then
     STREAM.g = STREAM.g - 1
     return
@@ -443,22 +458,29 @@ function streamHit(cap)
   STREAM.count = STREAM.count + 1
   cap.dead = true
   streamGaugeUp()
-  if streamPlaying() then streamChime() end
+  if streamLive() then streamChime() end
 end
 
--- A cap reaching the field: the key goes back into review, the
--- field lights where it struck, and the glyph is left flashing
--- there so the letter that got away stays readable.
+-- Anything reaching the field strikes it the same way, whether
+-- nobody answered it or the child shot it down onto the shield.
+-- The scene drains this list to put a blast where it landed.
+
+function streamStrike(cap)
+  cap.dead = true
+  STREAM.breaches = STREAM.breaches + 1
+  STREAM.struck[#STREAM.struck + 1] = {
+    x = cap.x, y = cap.y, ch = cap.ch, seed = cap.seed
+  }
+  fieldStrike(cap.x)
+  SOUND.impact()
+end
+
+-- A cap nobody answered: the key goes back into review and the
+-- gauge drains.
 
 function streamBreach(cap)
   streamReviewAdd(cap.ch)
-  cap.dead = true
-  STREAM.breaches = STREAM.breaches + 1
-  STREAM.gone[#STREAM.gone + 1] = {
-    ch = cap.ch, x = cap.x, y = cap.y, t = STREAM_GONE_T
-  }
-  fieldStrike(cap.x)
-  SOUND.breach()
+  streamStrike(cap)
   streamGaugeDown()
 end
 
@@ -526,20 +548,12 @@ function streamTickDowned(cap, dt)
   cap.roll = cap.roll + DANGER_CRASH_SPIN * dt
 end
 
--- A wreck striking the shield. Children read an ordinary cap
--- getting through as bad already; they did NOT read this one,
--- which is the mistake that matters most here -- so it is the
--- loud one. The scene drains this list to put a blast where it
--- came down.
+-- A wreck striking the shield. The shot has already been paid
+-- for, so nothing more is charged; otherwise it lands exactly
+-- as an unanswered cap does, and reads the same.
 
 function streamCrash(cap)
-  cap.dead = true
-  STREAM.breaches = STREAM.breaches + 1
-  STREAM.wrecks[#STREAM.wrecks + 1] = {
-    x = cap.x, y = cap.y, ch = cap.ch, seed = cap.seed
-  }
-  fieldStrike(cap.x)
-  SOUND.crash()
+  streamStrike(cap)
 end
 
 -- What reaching the field means: a cap the child never answered
@@ -582,15 +596,6 @@ function streamTickCaps(dt)
     if not c.dead then streamTickCap(c, dt) end
   end
   streamReap()
-end
-
-function streamTickGone(dt)
-  local keep = { }
-  for _, g in ipairs(STREAM.gone) do
-    g.t = g.t - dt
-    if g.t > 0 then keep[#keep + 1] = g end
-  end
-  STREAM.gone = keep
 end
 
 -- Is there anything left to shoot? A burning rock is not: it
@@ -667,21 +672,42 @@ function streamTickSpawn(dt)
   streamArmBurn()
 end
 
+-- The finishing stretch: caps still fall and still answer to
+-- the gun, but nothing new is sent and nothing scores. It ends
+-- once the sky holds nothing left to shoot, after a beat long
+-- enough for the last shot to be seen landing.
+
+function streamTickFinish(dt)
+  if streamShootable() then
+    STREAM.hold = STREAM_FINISH_HOLD
+    return
+  end
+  STREAM.hold = STREAM.hold - dt
+  if STREAM.hold > 0 then return end
+  if STREAM.after == "done" then
+    streamWin()
+  else
+    streamGrow()
+  end
+end
+
 function streamUpdate(dt)
   fwUpdate(STREAM, dt)
   fieldTick(dt)
-  streamTickGone(dt)
-  if not streamPlaying() then return end
+  if not streamLive() then return end
   streamTickCaps(dt)
+  if streamFinishing() then
+    streamTickFinish(dt)
+    return
+  end
   streamTickSpawn(dt)
   streamTickBurn(dt)
 end
 
 function streamReset()
   STREAM.caps = { }
-  STREAM.gone = { }
+  STREAM.struck = { }
   STREAM.recent = { }
-  STREAM.wrecks = { }
   STREAM.level = 1
   STREAM.g = 0
   STREAM.sink = 0
@@ -692,6 +718,8 @@ function streamReset()
   STREAM.jit = 0
   STREAM.burn = nil
   STREAM.phase = "play"
+  STREAM.after = nil
+  STREAM.hold = 0
   STREAM.fw = { }
 end
 
@@ -706,8 +734,22 @@ function streamEnter(game)
   pastelSnap()
 end
 
-function streamPlaying()
+-- Three questions the rest of the game asks about the phase.
+-- SCORING: the gauge answers and caps keep coming (play alone).
+-- LIVE: the sky is running and the gun works, which includes
+-- the finishing stretch after the gauge is full. Neither is
+-- true on an end screen.
+
+function streamScoring()
   return STREAM.phase == "play"
+end
+
+function streamFinishing()
+  return STREAM.phase == "finish"
+end
+
+function streamLive()
+  return streamScoring() or streamFinishing()
 end
 
 function streamDone()
@@ -738,11 +780,12 @@ end
 
 function streamResume()
   STREAM.caps = { }
-  STREAM.gone = { }
-  STREAM.wrecks = { }
+  STREAM.struck = { }
   STREAM.wait = STREAM_REFILL
   STREAM.jit = 0
   STREAM.burn = nil
+  STREAM.after = nil
+  STREAM.hold = 0
   STREAM.phase = "play"
 end
 
@@ -763,7 +806,7 @@ function streamOnNotch(delta)
   if notchGet(STREAM_GAME.id) == old then return end
   streamBuildChars()
   streamPaintSky()
-  if not streamPlaying() then
+  if not streamScoring() then
     streamReplay()
     return
   end

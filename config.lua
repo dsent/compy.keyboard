@@ -449,9 +449,14 @@ SPACE_RAMP[4] = { 0.30, 0.10, 0.18 }
 -- the charred body of a rock that is already burning, and FLAME
 -- the head of the trail it drags.
 
+-- A rock is lit at the rim and dark at the centre, so the black
+-- cap it carries sits in a hollow of its own colour, and so
+-- reads as set INTO the rock rather than stuck on its front.
+
 STAR = { 1, 1, 1 }
 ROCK = { 0.54, 0.54, 0.58 }
 ROCK_LIT = { 0.65, 0.65, 0.69 }
+ROCK_CORE = { 0.13, 0.13, 0.16 }
 HULL = { 0.29, 0.56, 0.83 }
 DOME = { 0.75, 0.89, 0.98 }
 LAMP = { 0.96, 0.77, 0.26 }
@@ -467,6 +472,17 @@ SMOKE_TRAIL = { 0.42, 0.38, 0.40 }
 -- instead. Bright enough to read on the hottest nebula ramp.
 
 GAUGE_SPACE_INK = { 0.86, 0.95, 1.00 }
+
+-- The gauge once it is full and the level is finishing: green
+-- and glowing, so "you have it -- clear the sky" is on the same
+-- object that was counting.
+
+GAUGE_DONE_INK = { 0.45, 1.00, 0.58 }
+
+-- How long the sky stays up after the last cap is cleared, so
+-- the shot that finished the level is seen finishing it.
+
+STREAM_FINISH_HOLD = 0.8
 
 -- Asteroids. The gun reloads after every shot; a blank costs
 -- longer than a hit, so hammering every key keeps the gun cold
@@ -485,6 +501,12 @@ ASTRO_SHAKE_PX = 9
 
 ASTRO_BLAST_T = 0.45
 ASTRO_BLAST_SHARDS = 8
+
+-- A rock that reaches the shield gets a longer one, because its
+-- cap has to stay readable while it fades: that letter is the
+-- one just booked into review.
+
+ASTRO_IMPACT_T = 0.85
 
 -- Scene geometry in reference pixels. Rocks keep clear of the
 -- edges; the ship rides under the force field's apex, so the
