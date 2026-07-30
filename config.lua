@@ -462,6 +462,13 @@ ASTRO_BOLT_T = 0.18
 ASTRO_SHAKE_T = 0.4
 ASTRO_SHAKE_PX = 9
 
+-- A rock shot clean comes apart: a flash, its own material
+-- thrown outward, and the cap it carried popping over the top
+-- so the letter just cleared is the last thing seen.
+
+ASTRO_BLAST_T = 0.45
+ASTRO_BLAST_SHARDS = 8
+
 -- Scene geometry in reference pixels. Rocks keep clear of the
 -- edges; the ship rides under the force field's apex, so the
 -- arc reads as the thing standing between it and the rocks.

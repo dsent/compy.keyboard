@@ -208,6 +208,45 @@ function drawRock(cx, cy, r, seed)
   gfx.polygon("fill", rockPoints(cx, cy, r * 0.72, seed))
 end
 
+-- A rock coming apart. p runs 0 at the moment of the hit to 1
+-- when it is gone. The flash is brief and grows as it fades;
+-- the shards are the rock's own outline at a fraction of its
+-- size, thrown outward from where it stood.
+
+-- The flash starts WIDER than the cap riding the rock, or the
+-- cap drawn over it would swallow the whole thing and the rock
+-- would still look like it had simply blinked out.
+
+function blastFlash(b, p)
+  if p > 0.35 then return end
+  local f = 1 - p / 0.35
+  gfx.setColor(1, 1, 0.9, f * f * 0.9)
+  gfx.circle("fill", b.x, b.y,
+    STREAM_ROCK_R * (1.2 + (1 - f) * 0.9))
+end
+
+-- Each shard gets its own speed and size from the seed. Evenly
+-- matched ones fly out as a ring, which reads as a shape rather
+-- than as something coming apart.
+
+function blastShard(b, i, p)
+  local a = b.seed + i / ASTRO_BLAST_SHARDS * 6.28
+  local v = 0.75 + 0.5 * math.sin(b.seed * 3 + i * 2.1)
+  local d = STREAM_ROCK_R * (0.6 + p * 1.9 * v)
+  local r = STREAM_ROCK_R * (0.34 - 0.1 * v) * (1 - p)
+  gfx.polygon("fill", rockPoints(b.x + math.cos(a) * d,
+    b.y + math.sin(a) * d, r, b.seed + i))
+end
+
+function drawBlast(b)
+  local p = 1 - b.t / ASTRO_BLAST_T
+  blastFlash(b, p)
+  gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3], 1 - p)
+  for i = 1, ASTRO_BLAST_SHARDS do
+    blastShard(b, i, p)
+  end
+end
+
 -- The force field. Three points fix it -- an end at each screen
 -- margin and the apex in the middle -- and the circle through
 -- them is enormous and centred far below the bottom edge, so

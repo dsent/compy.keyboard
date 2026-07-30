@@ -24,7 +24,7 @@ ensureFile("stream.lua")
 -- ship recoiling from a rock the field had to stop.
 
 GUN = { charge = 0, full = ASTRO_RELOAD_HIT, bolt = nil,
-  bursts = { }, shake = 0 }
+  bursts = { }, blasts = { }, shake = 0 }
 
 ASTRO_SHIP_Y = ASTRO_GROUND_Y - 4 * ASTRO_SHIP_U
 
@@ -33,6 +33,7 @@ function astroEnter(game)
   GUN.full = ASTRO_RELOAD_HIT
   GUN.bolt = nil
   GUN.bursts = { }
+  GUN.blasts = { }
   GUN.shake = 0
   streamEnter(game)
 end
@@ -67,8 +68,20 @@ function astroBurstAt(cap)
   }
 end
 
+-- A rock shot clean comes apart where it stood, rather than
+-- blinking out. The cap it carried is kept with the wreckage so
+-- the letter can pop over it as it fades.
+
+function astroBlastAt(cap)
+  GUN.blasts[#GUN.blasts + 1] = {
+    x = cap.x, y = cap.y, ch = cap.ch,
+    seed = cap.seed, t = ASTRO_BLAST_T
+  }
+end
+
 function astroShoot(cap)
   astroBolt(cap)
+  astroBlastAt(cap)
   astroReload(ASTRO_RELOAD_HIT)
   streamHit(cap)
 end
@@ -132,6 +145,14 @@ function astroTickBursts(dt)
   end
 end
 
+function astroTickBlasts(dt)
+  for i = #GUN.blasts, 1, -1 do
+    local b = GUN.blasts[i]
+    b.t = b.t - dt
+    if b.t <= 0 then table.remove(GUN.blasts, i) end
+  end
+end
+
 -- A rock the field has to stop shoves the saucer under it; the
 -- stream has already booked the breach, so this only reacts to
 -- its tally of them moving.
@@ -144,11 +165,13 @@ function astroUpdate(dt)
   end
   astroTickGun(dt)
   astroTickBursts(dt)
+  astroTickBlasts(dt)
 end
 
 function astroOnNotch(delta)
   GUN.bolt = nil
   GUN.bursts = { }
+  GUN.blasts = { }
   streamOnNotch(delta)
 end
 
@@ -172,12 +195,13 @@ function astroCapCell(cap)
   }
 end
 
-function astroDrawCap(cap, color, alpha)
+function astroDrawCap(cap, color, alpha, scale)
   drawKeycap(astroCapCell(cap), {
     name = cap.ch,
     unit = STREAM_CAP / KB_STD_H,
     color = color,
-    alpha = alpha
+    alpha = alpha,
+    scale = scale
   })
 end
 
@@ -220,6 +244,27 @@ function astroDrawLost()
   end
 end
 
+-- The wreckage, then the cap over it: the letter grows and
+-- fades out of its own explosion, so what the child cleared is
+-- what they are left looking at.
+
+-- The cap clears in the first half of the blast, so the letter
+-- is read and then gone rather than sitting over the wreckage
+-- for the whole of it.
+
+function astroDrawBlast(b)
+  local p = 1 - b.t / ASTRO_BLAST_T
+  drawBlast(b)
+  if p >= 0.5 then return end
+  astroDrawCap(b, CAP_LABEL, 1 - p * 2, 1 + p * 0.8)
+end
+
+function astroDrawBlasts()
+  for _, b in ipairs(GUN.blasts) do
+    astroDrawBlast(b)
+  end
+end
+
 -- The beam from the ship to the rock it struck.
 
 function astroDrawBolt(sx)
@@ -253,6 +298,7 @@ function astroDrawScene()
   drawStars(REF_W, REF_H, ASTRO_STARS)
   astroDrawStream()
   drawField(streamColorLevel())
+  astroDrawBlasts()
   astroDrawLost()
   astroDrawBursts()
   if GUN.bolt then astroDrawBolt(sx) end
