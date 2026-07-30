@@ -27,10 +27,10 @@ FONT_MENU = 34
 
 -- Menu grid. The list outgrew one column, so entries fill two,
 -- top to bottom then left to right. Rows are derived from the
--- number of games, so a shorter build simply uses fewer.
+-- number of games, so a shorter build simply uses fewer, and
+-- menu.lua centres the block those rows make.
 
 MENU_COLS = 2
-MENU_TOP = KBAND_Y0 + 40
 MENU_STEP = 54
 
 -- Entries are set smaller than the heading: the longest name

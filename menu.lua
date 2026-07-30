@@ -28,25 +28,48 @@ function menuItems()
 end
 
 -- Where entry i sits: down the first column, then the second.
+-- The block is centred in the keyboard band, so a shorter list
+-- does not leave the lower half of the canvas empty.
 
 function menuColumnW()
   return REF_W / MENU_COLS
 end
 
+function menuTop(rows)
+  local band = KBAND_Y1 - KBAND_Y0
+  return KBAND_Y0 + (band - rows * MENU_STEP) / 2
+end
+
 function menuSlot(i, rows)
   local col = math.floor((i - 1) / rows)
   local row = (i - 1) % rows
-  return col * menuColumnW(), MENU_TOP + row * MENU_STEP
+  return col * menuColumnW(), menuTop(rows) + row * MENU_STEP
+end
+
+-- Entries are printed from a common left edge rather than
+-- centred one by one, so the digits form a column a child can
+-- scan. The edge comes from the widest label, which leaves the
+-- block itself centred in its column.
+
+function menuIndent(items)
+  local font = getFont(FONT_MENU_ITEM)
+  local w = 0
+  for _, it in ipairs(items) do
+    local lw = font:getWidth(menuLabel(it))
+    if w < lw then w = lw end
+  end
+  return (menuColumnW() - w) / 2
 end
 
 function menuDrawList()
   gfx.setFont(getFont(FONT_MENU_ITEM))
   local items = menuItems()
   local rows = math.ceil(#items / MENU_COLS)
+  local indent = menuIndent(items)
   for i, it in ipairs(items) do
     local x, y = menuSlot(i, rows)
     gfx.setColor(COL_TEXT)
-    gfx.printf(menuLabel(it), x, y, menuColumnW(), "center")
+    gfx.print(menuLabel(it), x + indent, y)
   end
 end
 
