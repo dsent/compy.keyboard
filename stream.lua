@@ -24,9 +24,11 @@ STREAM = {
   review = { },
   order = { },
   recent = { },
+  wrecks = { },
   chars = { },
   taught = { },
   wait = 0,
+  jit = 0,
   burn = nil,
   level = 1,
   g = 0,
@@ -242,11 +244,48 @@ function streamSpawnX()
   return x
 end
 
--- Where a rock coming down at x stops: its own radius above the
--- field arc, which is where it touches.
+-- Where a rock coming straight down at x stops: its own radius
+-- above the field arc, which is where it touches.
 
 function streamStopY(x)
   return fieldY(x) - STREAM_ROCK_R
+end
+
+-- The field is one huge circle, so "has it reached the shield"
+-- is a distance from that circle's centre, not a height. A cap
+-- coming down at a slant needs it that way: a height test fires
+-- wherever the SLANTED path happens to cross, which is not the
+-- point it was aimed at, and the fall then takes a different
+-- time from the one it was given.
+
+STREAM_STOP_R = nil
+
+function streamStopRadius()
+  if not STREAM_STOP_R then
+    STREAM_STOP_R = FIELD_R + STREAM_ROCK_R
+  end
+  return STREAM_STOP_R
+end
+
+function streamAtField(cap)
+  local ex = cap.x - REF_W / 2
+  local ey = cap.y - FIELD_CY
+  local rs = streamStopRadius()
+  return ex * ex + ey * ey <= rs * rs
+end
+
+-- How far a cap must travel along the line it is on before it
+-- touches the field: a ray meeting that circle. Exact, so a
+-- slanted cap's fall lasts as long as a straight one's.
+
+function streamReach(x, dx, dy)
+  local rs = streamStopRadius()
+  local ex = x - REF_W / 2
+  local ey = STREAM_SPAWN_Y - FIELD_CY
+  local b = ex * dx + ey * dy
+  local d = b * b - (ex * ex + ey * ey - rs * rs)
+  if d <= 0 then return nil end
+  return -b - math.sqrt(d)
 end
 
 function streamAddCap(cap)
@@ -255,19 +294,42 @@ function streamAddCap(cap)
   return cap
 end
 
--- A cap falling straight down. Its speed comes from its OWN
--- stopping height, so every cap takes exactly the notch's fall
--- time however far across the arc it comes down.
+-- Where a cap is headed: a point on the arc, drifted from where
+-- it came in but never past the ends of the field, so it always
+-- lands ON the shield.
 
-function streamSpawnCap()
+function streamAimX(x)
+  local drift = (love.math.random() * 2 - 1) * STREAM_DRIFT
+  local lo = STREAM_MARGIN + STREAM_ROCK_R
+  local hi = REF_W - STREAM_MARGIN - STREAM_ROCK_R
+  return math.max(lo, math.min(hi, x + drift))
+end
+
+-- The line a cap comes down on, as a unit direction: from where
+-- it enters toward a point on the field.
+
+function streamAimDir(x, tx)
+  local dx = tx - x
+  local dy = streamStopY(tx) - STREAM_SPAWN_Y
+  local n = math.sqrt(dx * dx + dy * dy)
+  return dx / n, dy / n
+end
+
+-- A cap comes down at a slant, aimed at the field. Its speed is
+-- set from how far it must actually travel to touch, so it
+-- takes the fall time it was given whatever line it is on.
+
+function streamSpawnCap(fall)
   local x = streamSpawnX()
-  local span = streamStopY(x) - STREAM_SPAWN_Y
+  local dx, dy = streamAimDir(x, streamAimX(x))
+  local reach = streamReach(x, dx, dy)
   streamAddCap({
     ch = streamPickChar(),
     x = x,
     y = STREAM_SPAWN_Y,
-    vx = 0,
-    vy = span / streamCfg().fall,
+    vx = dx * reach / fall,
+    vy = dy * reach / fall,
+    fall = fall,
     hostile = false
   })
 end
@@ -308,9 +370,17 @@ function streamSpawnHostile()
   })
 end
 
+-- A level earned stops the sky and says so. It used to change
+-- two numbers in silence: the only thing a child could see was
+-- the gauge emptying, which reads as progress being taken away
+-- rather than given. Same screen and same sound as every other
+-- game in the set.
+
 function streamGrow()
   STREAM.level = STREAM.level + 1
   STREAM.g = 0
+  STREAM.phase = "level"
+  SOUND.win()
 end
 
 -- A demote keeps the gauge two-thirds full, so a child who just
@@ -373,7 +443,7 @@ function streamHit(cap)
   STREAM.count = STREAM.count + 1
   cap.dead = true
   streamGaugeUp()
-  if STREAM.phase ~= "done" then streamChime() end
+  if streamPlaying() then streamChime() end
 end
 
 -- A cap reaching the field: the key goes back into review, the
@@ -456,11 +526,20 @@ function streamTickDowned(cap, dt)
   cap.roll = cap.roll + DANGER_CRASH_SPIN * dt
 end
 
+-- A wreck striking the shield. Children read an ordinary cap
+-- getting through as bad already; they did NOT read this one,
+-- which is the mistake that matters most here -- so it is the
+-- loud one. The scene drains this list to put a blast where it
+-- came down.
+
 function streamCrash(cap)
   cap.dead = true
   STREAM.breaches = STREAM.breaches + 1
+  STREAM.wrecks[#STREAM.wrecks + 1] = {
+    x = cap.x, y = cap.y, ch = cap.ch, seed = cap.seed
+  }
   fieldStrike(cap.x)
-  SOUND.breach()
+  SOUND.crash()
 end
 
 -- What reaching the field means: a cap the child never answered
@@ -487,7 +566,7 @@ function streamTickCap(cap, dt)
     return
   end
   if cap.hostile and not cap.downed then return end
-  if cap.y >= streamStopY(cap.x) then streamLand(cap) end
+  if streamAtField(cap) then streamLand(cap) end
 end
 
 function streamReap()
@@ -561,16 +640,30 @@ end
 -- early brings the next one along instead of leaving a child
 -- watching nothing for the rest of the interval.
 
+-- The gap to the next cap, jittered either side of the notch's
+-- interval. The offset is carried, so the gap absorbs both this
+-- cap's and the next one's -- which is what keeps the LANDINGS
+-- evenly spaced while the arrivals wander.
+
+function streamArmNext()
+  local i = streamCfg().fall / STREAM.level
+  local prev = STREAM.jit
+  local j = (love.math.random() * 2 - 1) * STREAM_JITTER * i
+  STREAM.jit = j
+  STREAM.wait = i + j - prev
+end
+
 function streamTickSpawn(dt)
   STREAM.wait = STREAM.wait - dt
   local lull = STREAM_REFILL < STREAM.wait
   if lull and not streamShootable() then
     STREAM.wait = STREAM_REFILL
+    STREAM.jit = 0
     streamHurryBurn()
   end
   if STREAM.wait > 0 then return end
-  streamSpawnCap()
-  STREAM.wait = streamCfg().fall / STREAM.level
+  streamSpawnCap(streamCfg().fall - STREAM.jit)
+  streamArmNext()
   streamArmBurn()
 end
 
@@ -578,7 +671,7 @@ function streamUpdate(dt)
   fwUpdate(STREAM, dt)
   fieldTick(dt)
   streamTickGone(dt)
-  if streamDone() then return end
+  if not streamPlaying() then return end
   streamTickCaps(dt)
   streamTickSpawn(dt)
   streamTickBurn(dt)
@@ -588,6 +681,7 @@ function streamReset()
   STREAM.caps = { }
   STREAM.gone = { }
   STREAM.recent = { }
+  STREAM.wrecks = { }
   STREAM.level = 1
   STREAM.g = 0
   STREAM.sink = 0
@@ -595,6 +689,7 @@ function streamReset()
   STREAM.breaches = 0
   STREAM.lastx = nil
   STREAM.wait = 0
+  STREAM.jit = 0
   STREAM.burn = nil
   STREAM.phase = "play"
   STREAM.fw = { }
@@ -611,20 +706,48 @@ function streamEnter(game)
   pastelSnap()
 end
 
+function streamPlaying()
+  return STREAM.phase == "play"
+end
+
 function streamDone()
   return STREAM.phase == "done"
+end
+
+function streamAtLevel()
+  return STREAM.phase == "level"
 end
 
 function streamReplay()
   streamReset()
 end
 
--- Completion-screen keys: Enter|R replays this notch.
+-- Win-screen keys: Enter replays this notch.
 
 function streamDoneKey(k)
-  if k == "return" or k == "kpenter" or k == "r" then
+  if k == "return" or k == "kpenter" then
     streamReplay()
   end
+end
+
+-- Tab on the level screen. The sky starts clean at the new
+-- level, so "now three at a time" is what the child sees rather
+-- than whatever happened to be falling when the gauge filled --
+-- and nothing that was about to reach the field lands the
+-- instant play resumes.
+
+function streamResume()
+  STREAM.caps = { }
+  STREAM.gone = { }
+  STREAM.wrecks = { }
+  STREAM.wait = STREAM_REFILL
+  STREAM.jit = 0
+  STREAM.burn = nil
+  STREAM.phase = "play"
+end
+
+function streamLevelKey(k)
+  if k == "tab" then streamResume() end
 end
 
 -- A teacher notch change is difficulty, so it lands at once:
@@ -640,7 +763,7 @@ function streamOnNotch(delta)
   if notchGet(STREAM_GAME.id) == old then return end
   streamBuildChars()
   streamPaintSky()
-  if streamDone() then
+  if not streamPlaying() then
     streamReplay()
     return
   end

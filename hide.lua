@@ -63,6 +63,17 @@ function hideAtTop()
   return HIDE.level + 1 >= hideNotch().rot
 end
 
+-- The ladder the gauge draws its segments from: progression is
+-- its own here, so the rungs are levels rather than notches.
+
+function hideRung()
+  return HIDE.level
+end
+
+function hideRungs()
+  return hideNotch().rot - 1
+end
+
 -- One unit per correct press, scaled to the rotation: a bigger
 -- rotation is a bigger thing to hold, so it asks for more.
 
@@ -239,10 +250,18 @@ function hideHit(k, i)
   end
 end
 
+-- The knock always sounds; the cap is only shown for a key this
+-- game has a cap for. A keyboard reports names no cap exists
+-- for, and echoing one prints it straight past the edge of the
+-- cap it is drawn on.
+
 function hideWrong(k)
   SOUND.reject()
   HIDE.burst = nil
-  HIDE.wrong = { key = k, t = HIDE_HIT_T }
+  HIDE.wrong = nil
+  if capKnown(k) then
+    HIDE.wrong = { key = k, t = HIDE_HIT_T }
+  end
 end
 
 function hideKeypressed(k)
@@ -392,13 +411,13 @@ end
 
 function hideDraw()
   if hideDone() then
-    fkDrawLevelScreen(fkLevelTabLabel(HIDE, HIDE_CFG))
+    fkDrawEndScreen(HIDE, HIDE_CFG)
     fwDraw(HIDE)
     return
   end
   hideDrawScene()
   hideDrawFeedback()
-  drawWinGauge(HIDE.hits, HIDE.goal)
+  drawWinGauge(fkGauge(HIDE, HIDE_CFG))
   fwDraw(HIDE)
   fkDrawExitHint()
 end
@@ -413,6 +432,8 @@ HIDE_CFG.fill = hideFill
 HIDE_CFG.atTop = hideAtTop
 HIDE_CFG.advance = hideAdvance
 HIDE_CFG.reset = hideResetLevel
+HIDE_CFG.rung = hideRung
+HIDE_CFG.rungs = hideRungs
 
 registerScene("hide", {
   enter = hideEnter,

@@ -54,6 +54,14 @@ function SOUND.breach()
   sfx.knock()
 end
 
+-- A rock shot down crashing into the shield it was going to
+-- miss. This one is loud: the whole point is that the child
+-- caused it, and a knock reads as too small a thing for the
+-- mistake it reports.
+function SOUND.crash()
+  sfx.boom()
+end
+
 -- Entering or leaving the modal pause: a soft toggle blip.
 function SOUND.pause()
   sfx.toggle()

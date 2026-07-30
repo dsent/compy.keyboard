@@ -181,6 +181,25 @@ capKey2("pause", "Pause", "Break")
 CAP_FORM.fn = capAux
 CAP_FORM.zzz = capAux
 
+-- Can this name be drawn as a cap at all? A named key with a
+-- form engraves; a single glyph falls through to capLetter and
+-- prints upright. Anything else -- select, printscreen, a name
+-- from a keyboard this game knows nothing about -- has no cap,
+-- and capLetter would print it straight past the edge.
+--
+-- This is the test for ECHOING A KEY THE CHILD PRESSED, which
+-- must simply not be shown. It is NOT a licence to clamp a cap
+-- the game itself chose to present: an unmapped name on a
+-- TARGET still has to draw wrong and loud, which is the only
+-- reason the stray-key defect was ever noticed. See
+-- docs/decisions.md -> invalid-state-renders-visibly.
+
+function capKnown(name)
+  if not name then return false end
+  if CAP_FORM[name] then return true end
+  return #name == 1
+end
+
 function kbWidthMM(name, ri)
   local w = KB_WMM[name]
   if w then return w end
@@ -576,13 +595,38 @@ function winGaugeTrough(c, x, y0, h)
   gfx.rectangle("line", x, y0, WGAUGE_W, h, 4)
 end
 
-function drawWinGauge(cleared, total, ink)
-  local f = winGaugeFrac(cleared, total)
+-- The whole bar is the whole LADDER, not one level of it. A
+-- gauge that empties every time a level is cleared reads as
+-- progress being taken away; this one keeps climbing, and the
+-- ticks say how many rungs there are and which one is under
+-- way. g = { fill, of, rung, rungs, ink }.
+
+function winGaugeSpan(g)
+  local rungs = g.rungs or 1
+  local rung = g.rung or 1
+  local within = winGaugeFrac(g.fill, g.of)
+  return (rung - 1 + within) / rungs
+end
+
+function winGaugeTicks(g, x, y0, h)
+  local rungs = g.rungs or 1
+  if rungs < 2 then return end
+  local c = g.ink or COL_KEY_LABEL
+  gfx.setColor(c[1], c[2], c[3], 0.65)
+  for i = 1, rungs - 1 do
+    gfx.rectangle("fill", x, y0 + h * (1 - i / rungs) - 1,
+      WGAUGE_W, 2)
+  end
+end
+
+function drawWinGauge(g)
+  local f = winGaugeSpan(g)
   local x = REF_W - 16
   local y0 = KBAND_Y0
   local h = KBAND_Y1 - KBAND_Y0
-  local c = ink or COL_KEY_LABEL
+  local c = g.ink or COL_KEY_LABEL
   winGaugeTrough(c, x, y0, h)
   gfx.setColor(c[1], c[2], c[3], 0.9)
   gfx.rectangle("fill", x, y0 + h * (1 - f), WGAUGE_W, h * f, 4)
+  winGaugeTicks(g, x, y0, h)
 end

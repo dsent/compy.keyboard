@@ -210,6 +210,23 @@ STREAM_CFG = {
 
 STREAM_REFILL = 0.9
 
+-- The gap between caps is jittered either side of that interval
+-- and each cap's fall is stretched or shortened by its own
+-- offset, so the LANDINGS stay evenly spaced while the arrivals
+-- do not. The pace a child feels is set by the deadlines, so it
+-- is unchanged; only the rhythm stops being a metronome. A cap
+-- brought in early by the refill is exempt and falls at the
+-- plain speed -- clearing the sky has earned an early deadline.
+
+STREAM_JITTER = 0.45
+
+-- How far across the canvas a cap may drift on its way down.
+-- Ordinary caps come down at a slant, but a much steeper one
+-- than a burning rock's, so "falling on the shield" and
+-- "crossing past it" still tell each other apart at a glance.
+
+STREAM_DRIFT = 210
+
 -- Fall times (seconds, top edge to the field): the window a
 -- child has to find ONE key on a keyboard they cannot read
 -- fluently, so they are generous. A long fall costs nothing in

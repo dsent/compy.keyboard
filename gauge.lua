@@ -31,6 +31,21 @@ function gaugeAtTop(st, cfg)
   return notchGet(cfg.id) >= cfg.hi
 end
 
+-- Where this level sits on the game's ladder, for the gauge's
+-- segments: which rung, and how many there are. For a drill the
+-- ladder is the notch range; a scene whose progression is its
+-- own says so.
+
+function gaugeRung(st, cfg)
+  if cfg.rung then return cfg.rung(st, cfg) end
+  return notchGet(cfg.id) - cfg.lo + 1
+end
+
+function gaugeRungs(st, cfg)
+  if cfg.rungs then return cfg.rungs(st, cfg) end
+  return cfg.hi - cfg.lo + 1
+end
+
 function gaugeAddGroup(out, g)
   for _, k in ipairs(KEYSETS[g]) do
     out[#out + 1] = k

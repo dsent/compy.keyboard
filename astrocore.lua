@@ -117,6 +117,10 @@ function astroKeypressed(k)
     streamDoneKey(k)
     return
   end
+  if streamAtLevel() then
+    streamLevelKey(k)
+    return
+  end
   if not astroReady() then return end
   local cap = streamFindCap(k)
   if cap and cap.hostile then
@@ -157,12 +161,26 @@ end
 -- stream has already booked the breach, so this only reacts to
 -- its tally of them moving.
 
+-- A wreck the engine brought down leaves its position behind;
+-- the scene turns each into a blast where it struck, bigger and
+-- redder than a rock coming apart under the gun, because this
+-- one is the shield taking a hit the child caused.
+
+function astroTakeWrecks()
+  for _, w in ipairs(STREAM.wrecks) do
+    astroBlastAt(w)
+    GUN.blasts[#GUN.blasts].bad = true
+  end
+  STREAM.wrecks = { }
+end
+
 function astroUpdate(dt)
   local before = STREAM.breaches
   streamUpdate(dt)
   if before < STREAM.breaches then
     GUN.shake = ASTRO_SHAKE_T
   end
+  astroTakeWrecks()
   astroTickGun(dt)
   astroTickBursts(dt)
   astroTickBlasts(dt)
@@ -177,6 +195,12 @@ end
 
 function astroDone()
   return streamDone()
+end
+
+-- Neither end screen wants the help hint over it.
+
+function astroIdle()
+  return not streamPlaying()
 end
 
 -- Drawing
@@ -307,17 +331,27 @@ end
 
 -- The gauge is the only score on screen. A running tally of
 -- rocks destroyed is a number to chase, which is not what these
--- games ask a child to do.
+-- games ask a child to do. Its segments are the levels of this
+-- notch, so the whole climb is visible rather than just the
+-- stretch under way.
+
+function astroGauge()
+  return {
+    fill = STREAM.g, of = streamCfg().promote,
+    rung = STREAM.level, rungs = streamCfg().lmax,
+    ink = GAUGE_SPACE_INK
+  }
+end
 
 function astroDraw()
   if astroDone() then
-    fkDrawDoneScreen()
+    fkDrawWinScreen()
     fwDraw(STREAM)
     return
   end
   astroDrawScene()
-  drawWinGauge(STREAM.g, streamCfg().promote,
-    GAUGE_SPACE_INK)
+  drawWinGauge(astroGauge())
+  if streamAtLevel() then fkDrawLevelScreen() end
   fwDraw(STREAM)
-  fkDrawExitHint()
+  if streamPlaying() then fkDrawExitHint() end
 end

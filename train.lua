@@ -51,6 +51,17 @@ function trainAtTop()
   return TRAIN.level + 1 >= TRAIN_PLAT_MAX
 end
 
+-- The ladder the gauge draws its segments from: progression is
+-- its own here, so the rungs are levels rather than notches.
+
+function trainRung()
+  return TRAIN.level
+end
+
+function trainRungs()
+  return TRAIN_PLAT_MAX - 1
+end
+
 -- The goal is trains, not presses, so the reserve rule is left
 -- to bias the pick toward keys not yet cleared rather than to
 -- stretch the level: a level counted in trains that had to
@@ -204,9 +215,17 @@ function trainHit(k)
   LOAD.t = 0
 end
 
+-- The knock always sounds and the press always counts as a
+-- fumble; the cap is only shown for a key this game has a cap
+-- for. A keyboard reports names no cap exists for, and echoing
+-- one prints it straight past the edge of its own cap.
+
 function trainWrong(k)
   SOUND.reject()
-  TRAIN.wrong = { key = k, t = TRAIN_HIT_T }
+  TRAIN.wrong = nil
+  if capKnown(k) then
+    TRAIN.wrong = { key = k, t = TRAIN_HIT_T }
+  end
   gaugeOnWrong(TRAIN, TRAIN_CFG)
 end
 
@@ -351,13 +370,13 @@ end
 
 function trainDraw()
   if trainDone() then
-    fkDrawLevelScreen(fkLevelTabLabel(TRAIN, TRAIN_CFG))
+    fkDrawEndScreen(TRAIN, TRAIN_CFG)
     fwDraw(TRAIN)
     return
   end
   trainDrawScene()
   trainDrawFeedback()
-  drawWinGauge(TRAIN.hits, TRAIN.goal)
+  drawWinGauge(fkGauge(TRAIN, TRAIN_CFG))
   fwDraw(TRAIN)
   fkDrawExitHint()
 end
@@ -372,6 +391,8 @@ TRAIN_CFG.fill = trainFill
 TRAIN_CFG.atTop = trainAtTop
 TRAIN_CFG.advance = trainAdvance
 TRAIN_CFG.reset = trainResetLevel
+TRAIN_CFG.rung = trainRung
+TRAIN_CFG.rungs = trainRungs
 
 registerScene("train", {
   enter = trainEnter,

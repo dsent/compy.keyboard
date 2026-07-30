@@ -217,12 +217,26 @@ end
 -- cap drawn over it would swallow the whole thing and the rock
 -- would still look like it had simply blinked out.
 
+-- A wreck striking the shield flashes RED and half again as
+-- wide as a rock coming apart under the gun. One is the child
+-- succeeding, the other is the child's own mistake landing on
+-- the thing they were defending, and they should not look
+-- alike.
+
+function blastHue(b)
+  if b.bad then return COL_RED end
+  return { 1, 1, 0.9 }
+end
+
 function blastFlash(b, p)
   if p > 0.35 then return end
   local f = 1 - p / 0.35
-  gfx.setColor(1, 1, 0.9, f * f * 0.9)
+  local c = blastHue(b)
+  local w = 1
+  if b.bad then w = 1.6 end
+  gfx.setColor(c[1], c[2], c[3], f * f * 0.9)
   gfx.circle("fill", b.x, b.y,
-    STREAM_ROCK_R * (1.2 + (1 - f) * 0.9))
+    STREAM_ROCK_R * (1.2 + (1 - f) * 0.9) * w)
 end
 
 -- Each shard gets its own speed and size from the seed. Evenly
@@ -232,7 +246,9 @@ end
 function blastShard(b, i, p)
   local a = b.seed + i / ASTRO_BLAST_SHARDS * 6.28
   local v = 0.75 + 0.5 * math.sin(b.seed * 3 + i * 2.1)
-  local d = STREAM_ROCK_R * (0.6 + p * 1.9 * v)
+  local reach = 1.9
+  if b.bad then reach = 2.9 end
+  local d = STREAM_ROCK_R * (0.6 + p * reach * v)
   local r = STREAM_ROCK_R * (0.34 - 0.1 * v) * (1 - p)
   gfx.polygon("fill", rockPoints(b.x + math.cos(a) * d,
     b.y + math.sin(a) * d, r, b.seed + i))

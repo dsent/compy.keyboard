@@ -288,7 +288,7 @@ function altDrawPlay()
   if gaugeGlowing(ALT) then
     altDrawTarget(gaugeCurrent(ALT))
   end
-  drawWinGauge(ALT.hits, ALT.goal)
+  drawWinGauge(fkGauge(ALT, ALT_CFG))
   fkDrawExitHint()
 end
 
@@ -300,7 +300,7 @@ function altDraw()
   if ALT.burst then drawBurst(ALT.burst) end
   drawIndicators(CAPS_STATE.on)
   if done then
-    fkDrawLevelScreen(fkLevelTabLabel(ALT, ALT_CFG))
+    fkDrawEndScreen(ALT, ALT_CFG)
   end
   fwDraw(ALT)
 end

@@ -28,6 +28,6 @@ registerScene("danger", {
   draw = astroDraw,
   keypressed = astroKeypressed,
   onNotch = astroOnNotch,
-  noHint = astroDone,
+  noHint = astroIdle,
   timed = true
 })

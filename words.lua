@@ -229,13 +229,23 @@ function wordsTextinput(ch)
   end
 end
 
--- Only the level-up screen consumes a key (Tab climbs a rung);
--- play-time keys are judged in textinput, so the non-printing
--- keys (Backspace, Enter, Tab) are ignored during play.
-function wordsKeypressed(k)
-  if wordsDone() and k == "tab" then
-    wordsAdvance()
+-- Only an end screen consumes a key: Tab climbs a rung, and at
+-- the top rung, where there is nothing new ahead, Enter plays
+-- again instead. Play-time keys are judged in textinput, so the
+-- non-printing keys (Backspace, Enter, Tab) are ignored during
+-- play.
+function wordsEndKey(k)
+  if fkAtEnd(WORDS, WORDS_CFG) then
+    if k == "return" or k == "kpenter" then
+      wordsAdvance()
+    end
+    return
   end
+  if k == "tab" then wordsAdvance() end
+end
+
+function wordsKeypressed(k)
+  if wordsDone() then wordsEndKey(k) end
 end
 
 -- Tab on the level-up screen: climb a rung into a fresh level,
@@ -316,7 +326,7 @@ end
 
 function wordsDrawPlay()
   wordsDrawStrip()
-  drawWinGauge(WORDS.hits, WORDS.goal)
+  drawWinGauge(fkGauge(WORDS, WORDS_CFG))
   fkDrawExitHint()
 end
 
@@ -327,7 +337,7 @@ function wordsDraw()
   if WORDS.burst then drawBurst(WORDS.burst) end
   drawIndicators(CAPS_STATE.on)
   if done then
-    fkDrawLevelScreen(fkLevelTabLabel(WORDS, WORDS_CFG))
+    fkDrawEndScreen(WORDS, WORDS_CFG)
   end
   fwDraw(WORDS)
 end
