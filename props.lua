@@ -308,15 +308,20 @@ end
 -- green, and with the flame taken away the star and the
 -- crossing line still say which rock this is.
 
-function spikePoints(cx, cy, r, seed)
+-- The whole star turns by cap.roll, which only a rock that has
+-- been shot down carries: a tumbling silhouette says "knocked
+-- out of its course" without a word.
+
+function spikePoints(cap, r)
   local pts = { }
+  local roll = cap.roll or 0
   for i = 0, DANGER_SPIKES * 2 - 1 do
-    local a = i * math.pi / DANGER_SPIKES
+    local a = i * math.pi / DANGER_SPIKES + roll
     local out = 1.0
     if i % 2 == 1 then out = 0.44 end
-    local j = out - 0.08 + 0.08 * math.sin(seed + i * 1.7)
-    pts[#pts + 1] = cx + math.cos(a) * r * j
-    pts[#pts + 1] = cy + math.sin(a) * r * j
+    local j = out - 0.08 + 0.08 * math.sin(cap.seed + i * 1.7)
+    pts[#pts + 1] = cap.x + math.cos(a) * r * j
+    pts[#pts + 1] = cap.y + math.sin(a) * r * j
   end
   return pts
 end
@@ -356,14 +361,13 @@ end
 function drawBurning(cap)
   drawTrail(cap)
   gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3], 0.35)
-  gfx.polygon("fill", spikePoints(cap.x, cap.y,
-    STREAM_ROCK_R * 1.16, cap.seed))
-  gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3])
   gfx.polygon("fill",
-    spikePoints(cap.x, cap.y, STREAM_ROCK_R, cap.seed))
+    spikePoints(cap, STREAM_ROCK_R * 1.16))
+  gfx.setColor(EMBER_LIT[1], EMBER_LIT[2], EMBER_LIT[3])
+  gfx.polygon("fill", spikePoints(cap, STREAM_ROCK_R))
   gfx.setColor(EMBER[1], EMBER[2], EMBER[3])
-  gfx.polygon("fill", spikePoints(cap.x, cap.y,
-    STREAM_ROCK_R * 0.62, cap.seed))
+  gfx.polygon("fill",
+    spikePoints(cap, STREAM_ROCK_R * 0.62))
 end
 
 -- The saucer's three lamps ARE the charge meter: they go out on

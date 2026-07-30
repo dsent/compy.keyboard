@@ -437,17 +437,57 @@ function streamOffCanvas(cap)
   return cap.y > REF_H + m
 end
 
--- A burning rock is never stopped by the field it was aimed
--- past; it leaves by the edge it was always heading for.
+-- A burning rock that has been shot. It was never coming for
+-- us, so the shot is the thing that puts it on the field: it
+-- loses its course, tumbles, and falls onto the shield the
+-- child was defending. Nothing more is charged for the crash --
+-- the shot has already been paid for -- but the field takes the
+-- hit, which is the answer to what firing at it achieved.
+
+function streamDown(cap)
+  cap.downed = true
+  cap.roll = 0
+  cap.vx = cap.vx * DANGER_CRASH_DRAG
+  cap.vy = cap.vy * DANGER_CRASH_DRAG
+end
+
+function streamTickDowned(cap, dt)
+  cap.vy = cap.vy + DANGER_CRASH_G * dt
+  cap.roll = cap.roll + DANGER_CRASH_SPIN * dt
+end
+
+function streamCrash(cap)
+  cap.dead = true
+  STREAM.breaches = STREAM.breaches + 1
+  fieldStrike(cap.x)
+  SOUND.breach()
+end
+
+-- What reaching the field means: a cap the child never answered
+-- is a breach, a rock they shot down is a crash.
+
+function streamLand(cap)
+  if cap.downed then
+    streamCrash(cap)
+  else
+    streamBreach(cap)
+  end
+end
+
+-- A burning rock still on its course is never stopped by the
+-- field it was aimed past; it leaves by the edge it was always
+-- heading for.
 
 function streamTickCap(cap, dt)
+  if cap.downed then streamTickDowned(cap, dt) end
   cap.x = cap.x + cap.vx * dt
   cap.y = cap.y + cap.vy * dt
-  if cap.hostile then
-    if streamOffCanvas(cap) then cap.dead = true end
+  if streamOffCanvas(cap) then
+    cap.dead = true
     return
   end
-  if cap.y >= streamStopY(cap.x) then streamBreach(cap) end
+  if cap.hostile and not cap.downed then return end
+  if cap.y >= streamStopY(cap.x) then streamLand(cap) end
 end
 
 function streamReap()

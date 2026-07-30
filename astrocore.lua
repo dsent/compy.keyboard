@@ -77,15 +77,14 @@ function astroBlank()
   astroReload(ASTRO_RELOAD_MISS)
 end
 
--- Shooting a burning rock. It was never coming for us, so the
--- shot does not destroy it: it flies on exactly as before and
--- leaves by the edge it was always heading for, which is the
--- clearest possible answer to why it should have been left
--- alone. What the shot costs is a drained gauge, a knock and
--- the long blank reload -- the price of firing at nothing.
+-- Shooting a burning rock. It was going to miss, so the shot is
+-- what brings it down: it tumbles out of its course and falls
+-- onto the shield, which is the clearest possible answer to why
+-- it should have been left alone. The shot also costs a drained
+-- gauge, a knock and the long blank reload.
 --
--- One rock costs once. Firing at it again still wastes the
--- reload, but the gauge is not drained twice for the same
+-- One rock costs once. Firing at the wreck again still wastes
+-- the reload, but the gauge is not drained twice for the same
 -- mistake; a LATER rock carrying the same key is a new one and
 -- charges again.
 
@@ -96,6 +95,7 @@ function astroShootPast(cap)
   SOUND.reject()
   if cap.spent then return end
   cap.spent = true
+  streamDown(cap)
   streamGaugeDown()
 end
 

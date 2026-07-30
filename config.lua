@@ -529,6 +529,16 @@ DANGER_TRAIL = 7
 DANGER_TRAIL_GAP = 0.55
 DANGER_SPIKES = 9
 
+-- Shooting one knocks it down. It keeps a little of its forward
+-- speed, tumbles, and falls onto the very shield it was going
+-- to miss -- so what firing at it achieved is on screen a
+-- moment later. Gravity is stiff enough that the crash reads as
+-- a consequence of the shot rather than a slow drift.
+
+DANGER_CRASH_G = 900
+DANGER_CRASH_DRAG = 0.35
+DANGER_CRASH_SPIN = 5.0
+
 HILL = { 0.55, 0.72, 0.48 }
 GROUND = { 0.45, 0.62, 0.38 }
 WOOD = { 0.75, 0.54, 0.29 }
