@@ -61,8 +61,11 @@ function trainGoal()
   return trainNotch().trains
 end
 
+-- The teacher's notch, so the chord visibly lands. Progression
+-- is already on screen as the platform count.
+
 function trainSky()
-  skyLevel(TRAIN.level - 1)
+  skyLevel(notchGet("train") - TRAIN_LO)
 end
 
 function trainResetLevel()

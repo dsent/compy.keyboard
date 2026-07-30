@@ -98,6 +98,11 @@ KEYSETS.top_row = {
   "q", "w", "e", "r", "t",
   "y", "u", "i", "o", "p"
 }
+-- The top row in two halves, one per hand, for a ladder that
+-- needs a step between "the bottom two rows" and "all of them".
+
+KEYSETS.top_left = { "q", "w", "e", "r", "t" }
+KEYSETS.top_right = { "y", "u", "i", "o", "p" }
 KEYSETS.press_space = { "space" }
 KEYSETS.press_enter_back = { "return", "backspace" }
 KEYSETS.press_tab = { "tab" }
@@ -205,32 +210,32 @@ STREAM_CFG = {
 
 STREAM_REFILL = 0.9
 
--- Fall times (seconds, top edge to the field), tuned slow for
--- 4-6 beginners: the fall time IS the window a child has to
--- find one key, AND, divided by the level, the cadence caps
--- arrive at -- so a long fall buys a generous window at the
--- price of an empty sky between rocks. These keep the wait
--- after a quick answer down to a breath. The notch sets that
--- speed, the level CEILING (lmax) and the `promote` threshold;
--- the floor is always level 1. Caps-to-win is promote * lmax
--- (10/18/21/32/36), which is a minute and a half a notch.
+-- Fall times (seconds, top edge to the field): the window a
+-- child has to find ONE key on a keyboard they cannot read
+-- fluently, so they are generous. A long fall costs nothing in
+-- dead time, because STREAM_REFILL below brings the next rock
+-- along as soon as the sky is clear -- the fall sets the
+-- ceiling on how long a rock may take, the child sets the
+-- floor. The notch also sets the level CEILING (lmax) and the
+-- `promote` threshold; the floor is always level 1.
+-- Caps-to-win is promote * lmax (10/18/21/32/36).
 
 STREAM_NOTCH = { }
-STREAM_NOTCH[-2] = { fall = 9.0, lmax = 2, promote = 5 }
-STREAM_NOTCH[-1] = { fall = 8.0, lmax = 3, promote = 6 }
-STREAM_NOTCH[0] = { fall = 7.0, lmax = 3, promote = 7 }
-STREAM_NOTCH[1] = { fall = 5.5, lmax = 4, promote = 8 }
-STREAM_NOTCH[2] = { fall = 4.5, lmax = 4, promote = 9 }
+STREAM_NOTCH[-2] = { fall = 20.0, lmax = 2, promote = 5 }
+STREAM_NOTCH[-1] = { fall = 16.0, lmax = 3, promote = 6 }
+STREAM_NOTCH[0] = { fall = 14.0, lmax = 3, promote = 7 }
+STREAM_NOTCH[1] = { fall = 10.0, lmax = 4, promote = 8 }
+STREAM_NOTCH[2] = { fall = 7.0, lmax = 4, promote = 9 }
 
 -- The key set by notch, on the shared ladder: notch 0 is the
--- full set (letters and digits) and the negative notches limit
--- it by physical row. A notch ADDS its groups on top of the
--- lower ones. The positive notches add no keys -- they raise
--- difficulty through speed and the level ceiling instead.
+-- full set and the negative notches limit it by physical row. A
+-- notch ADDS its groups on top of the lower ones. The positive
+-- notches add no keys -- they raise difficulty through speed
+-- and the level ceiling instead.
 
 STREAM_NOTCH[-2].add = { "home_row" }
 STREAM_NOTCH[-1].add = { "bottom_row" }
-STREAM_NOTCH[0].add = { "top_row", "numbers" }
+STREAM_NOTCH[0].add = { "top_row" }
 STREAM_NOTCH[1].add = { }
 STREAM_NOTCH[2].add = { }
 
@@ -519,7 +524,7 @@ FIELD_RAMP[4] = { 1.00, 0.40, 0.46 }
 DANGER_AIM_LO = 428
 DANGER_AIM_HI = 448
 DANGER_FAR = 0.55
-DANGER_CHANCE = 0.5
+DANGER_CHANCE = 0.15
 DANGER_TRAIL = 7
 DANGER_TRAIL_GAP = 0.55
 DANGER_SPIKES = 9
@@ -570,7 +575,7 @@ HIDE_NOTCH[-2] = { show = 2.4, away = 0.5, rot = 3, box = 2,
 HIDE_NOTCH[-1] = { show = 1.7, away = 0.9, rot = 4, box = 3,
   add = { "bottom_row" } }
 HIDE_NOTCH[0] = { show = 1.1, away = 1.4, rot = 5, box = 4,
-  add = { "top_row", "numbers" } }
+  add = { "top_row" } }
 
 HIDE_SLIDE = 0.35
 
@@ -604,14 +609,16 @@ TRAIN_ARRIVE = 1.2
 -- Progression sets the platform count: level L runs L + 1
 -- platforms, up to what the track holds. The notch sets the key
 -- set only, full at notch 0, and how many trains a level asks
--- for -- a wider key set wants more trains to cover it.
+-- for -- a wider key set wants more trains to cover it. Four
+-- notches over three rows, so the top row arrives a hand at a
+-- time rather than all at once.
 
 TRAIN_PLAT_MAX = 6
 TRAIN_NOTCH = { }
 TRAIN_NOTCH[-3] = { trains = 3, add = { "home_row" } }
 TRAIN_NOTCH[-2] = { trains = 3, add = { "bottom_row" } }
-TRAIN_NOTCH[-1] = { trains = 4, add = { "top_row" } }
-TRAIN_NOTCH[0] = { trains = 4, add = { "numbers" } }
+TRAIN_NOTCH[-1] = { trains = 4, add = { "top_left" } }
+TRAIN_NOTCH[0] = { trains = 4, add = { "top_right" } }
 
 -- Scene geometry in reference pixels. The locomotive stands at
 -- the left and platforms fill in to its right; TRAIN_PLAT_MAX

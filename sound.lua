@@ -45,11 +45,13 @@ function SOUND.laser()
   sfx.pew()
 end
 
--- A rock reaching the force field. A world event rather than a
--- verdict on the child, so it is the impact and not the knock
--- that says "input not accepted".
+-- A rock reaching the force field. The shake and the flash on
+-- the arc carry the event; the sound only has to mark it, so it
+-- is the same short neutral knock everything else uses. An
+-- explosion here is frightening out of all proportion to what
+-- happened, which is that one letter got away.
 function SOUND.breach()
-  sfx.boom()
+  sfx.knock()
 end
 
 -- Entering or leaving the modal pause: a soft toggle blip.

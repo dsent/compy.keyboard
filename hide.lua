@@ -70,11 +70,12 @@ function hideGoal()
   return HIDE_G_BASE + HIDE_G_STEP * hideRotSize()
 end
 
--- The sky is the CHILD's progress. The teacher's notch is the
--- key set, which is read off the keys themselves.
+-- The teacher's notch, so the chord visibly lands. Progression
+-- is already on screen as the crate count and how many keys the
+-- rotation holds.
 
 function hideSky()
-  skyLevel(HIDE.level - 1)
+  skyLevel(notchGet("hide") - HIDE_LO)
 end
 
 function hideResetLevel()

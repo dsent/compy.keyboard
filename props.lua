@@ -10,12 +10,17 @@
 -- unit u, so a caller states position and scale in one call.
 
 -- A scene paints its own sky instead of the chrome pastel,
--- which would hang a green or yellow sky over green grass. The
--- step is the CHILD's level: a level earned moves the day
--- along, while the teacher's notch is read off the keys.
+-- which would hang a green or yellow sky over green grass.
+--
+-- The step is the TEACHER's notch. It has to be: a notch change
+-- otherwise moves nothing a teacher can see, since the key set
+-- it sets only shows up in the keys that happen to come next.
+-- Progression has a carrier of its own on each scene already:
+-- how many platforms the train has, how many crates stand on
+-- the meadow. So the sky is free to answer the chord.
 
-function skyLevel(level)
-  local i = math.min(level, #SKY_RAMP)
+function skyLevel(step)
+  local i = math.min(step, #SKY_RAMP)
   pastelSetTarget(SKY_RAMP[i])
 end
 

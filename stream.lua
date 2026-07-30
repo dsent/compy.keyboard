@@ -496,6 +496,17 @@ function streamArmBurn()
   STREAM.burn = STREAM.wait / 2
 end
 
+-- A cleared sky shortens the gap, so a burning rock already
+-- booked for the middle of it has to move up with it -- or it
+-- would arrive after the next ordinary rock instead of between
+-- the two.
+
+function streamHurryBurn()
+  if not STREAM.burn then return end
+  local half = STREAM.wait / 2
+  if half < STREAM.burn then STREAM.burn = half end
+end
+
 function streamTickBurn(dt)
   if not STREAM.burn then return end
   STREAM.burn = STREAM.burn - dt
@@ -515,6 +526,7 @@ function streamTickSpawn(dt)
   local lull = STREAM_REFILL < STREAM.wait
   if lull and not streamShootable() then
     STREAM.wait = STREAM_REFILL
+    streamHurryBurn()
   end
   if STREAM.wait > 0 then return end
   streamSpawnCap()
