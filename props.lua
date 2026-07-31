@@ -193,34 +193,92 @@ function drawStars(w, h, n)
   end
 end
 
--- An asteroid: an eight-point polygon whose radii are jittered
--- from a seed, so every rock has its own outline. The lit core
--- is left plain, which is what a cap sits on.
+-- An asteroid: a twelve-point silhouette. Radius and angle
+-- both jitter from the seed, on two frequencies each way, so
+-- seeds give different kinds of outline rather than the same
+-- blob in different widths. The four diagonal vertices stay on
+-- their spokes and never dip under 1.05 r: the cap's corners
+-- live under those diagonals, and holding them out is what
+-- keeps every corner buried in rock without growing the rock.
+
+function rockJag(seed, i)
+  local j = 1.03 + 0.085 * math.sin(seed + i * 2.3)
+  return j + 0.045 * math.sin(seed * 3.1 + i * 5.3)
+end
 
 function rockPoints(cx, cy, r, seed)
   local pts = { }
-  for i = 0, 7 do
-    local a = i * math.pi / 4
-    local j = 1 + 0.18 * math.sin(seed + i * 2.4)
+  for i = 0, 11 do
+    local a = math.pi / 12 + i * math.pi / 6
+    local j = rockJag(seed, i)
+    if i % 3 == 1 then
+      j = math.max(j, 1.05)
+    else
+      a = a + 0.12 * math.sin(seed * 1.7 + i * 3.7)
+    end
     pts[#pts + 1] = cx + math.cos(a) * r * j
     pts[#pts + 1] = cy + math.sin(a) * r * j
   end
   return pts
 end
 
--- Lit rim, body, then a hollow at the centre in the CAP's own
--- black, so the cap lands in it and stops being a shape: what
--- is left on screen is a letter down in a cavity. Drawing the
--- cap's edge -- a lighter hollow, a groove, a bevel -- is the
--- one thing that undoes this.
+-- The hollow is cut from the CAP's silhouette, not from the
+-- outline: an octagon fitted around the cap rectangle, pushed
+-- a few jittered pixels past its corners and edges. However
+-- the outline falls, the hollow swallows the whole cap, so the
+-- letter sits in black on every seed.
+
+HOLLOW_X = { 1, 1, 0, -1, -1, -1, 0, 1 }
+HOLLOW_Y = { 0, 1, 1, 1, 0, -1, -1, -1 }
+HOLLOW_PAD = { 0.12, 0.06, 0.16, 0.06, 0.12, 0.06, 0.16, 0.06 }
+
+function rockPad(seed, k)
+  local w = math.sin(seed * 2.6 + k * 1.9)
+  return 0.04 + (HOLLOW_PAD[k] - 0.04) * (0.5 + 0.5 * w)
+end
+
+function rockHollow(cx, cy, r, seed)
+  local pts = { }
+  for k = 1, 8 do
+    local p = rockPad(seed, k)
+    pts[#pts + 1] = cx + HOLLOW_X[k] * r * (0.61 + p)
+    pts[#pts + 1] = cy + HOLLOW_Y[k] * r * (0.51 + p)
+  end
+  return pts
+end
+
+-- The ring of rock around the hollow is shaded facet by facet:
+-- each wedge one flat grey, swung by where it faces against
+-- the light from ROCK_LIGHT, with a little grain per facet
+-- from the seed. Flat facets catching one light are what make
+-- it read as stone instead of an outline around a hole.
+
+function rockShade(seed, i)
+  local a = math.pi / 6 + i * math.pi / 6
+  local d = math.cos(a) * ROCK_LIGHT[1]
+    + math.sin(a) * ROCK_LIGHT[2]
+  local v = ROCK_BASE + ROCK_SPAN * d
+  v = v + ROCK_GRAIN * math.sin(seed * 2.2 + i * 3.9)
+  gfx.setColor(v, v, v + ROCK_TINT)
+end
+
+-- Facets first, then the hollow in the CAP's own black, so the
+-- cap lands in it and stops being a shape: what is left on
+-- screen is a letter down in a cavity. Drawing the cap's edge
+-- -- a groove, a bevel, a lit lip -- is the one thing that
+-- undoes this.
 
 function drawRock(cx, cy, r, seed)
-  gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3])
-  gfx.polygon("fill", rockPoints(cx, cy, r, seed))
-  gfx.setColor(ROCK[1], ROCK[2], ROCK[3])
-  gfx.polygon("fill", rockPoints(cx, cy, r * 0.9, seed))
+  local pts = rockPoints(cx, cy, r, seed)
+  for i = 0, 11 do
+    local k = i * 2 + 1
+    local n = i == 11 and 1 or k + 2
+    rockShade(seed, i)
+    gfx.polygon("fill", cx, cy, pts[k], pts[k + 1],
+      pts[n], pts[n + 1])
+  end
   gfx.setColor(ROCK_CORE[1], ROCK_CORE[2], ROCK_CORE[3])
-  gfx.polygon("fill", rockPoints(cx, cy, r * 0.8, seed))
+  gfx.polygon("fill", rockHollow(cx, cy, r, seed))
 end
 
 -- A rock coming apart. p runs 0 at the moment of the hit to 1
