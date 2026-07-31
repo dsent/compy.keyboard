@@ -54,13 +54,11 @@ STREAM_GAME = nil
 -- Falling caps are enlarged board caps: height in px, width
 -- from the board's letter-cap proportions. The rock under a cap
 -- is wider than the cap, and its radius is what has to clear
--- the force field. It runs wider than a whole cap-width: a rock
--- only reads as a rock once there is visibly more rock than
--- cap, and the socket the cap sits in eats some of that margin.
+-- the force field.
 
 STREAM_CAP = 56
 STREAM_CAP_W = math.floor(STREAM_CAP * KB_STD_W / KB_STD_H)
-STREAM_ROCK_R = STREAM_CAP_W * 1.12
+STREAM_ROCK_R = STREAM_CAP_W * 0.82
 STREAM_ROCK_D = STREAM_ROCK_R * 2
 
 -- Game-owned catch chime: win.ogg pitched up -- lighter than
