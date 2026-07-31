@@ -208,9 +208,11 @@ function rockPoints(cx, cy, r, seed)
   return pts
 end
 
--- Lit rim, body, then a dark hollow at the centre. The cap the
--- rock carries is black, so it lands in that hollow and reads
--- as cut into the rock; a light centre made it look stuck on.
+-- Lit rim, body, then a hollow at the centre in the CAP's own
+-- black, so the cap lands in it and stops being a shape: what
+-- is left on screen is a letter down in a cavity. Drawing the
+-- cap's edge -- a lighter hollow, a groove, a bevel -- is the
+-- one thing that undoes this.
 
 function drawRock(cx, cy, r, seed)
   gfx.setColor(ROCK_LIT[1], ROCK_LIT[2], ROCK_LIT[3])

@@ -449,14 +449,16 @@ SPACE_RAMP[4] = { 0.30, 0.10, 0.18 }
 -- the charred body of a rock that is already burning, and FLAME
 -- the head of the trail it drags.
 
--- A rock is lit at the rim and dark at the centre, so the black
--- cap it carries sits in a hollow of its own colour, and so
--- reads as set INTO the rock rather than stuck on its front.
+-- A rock is lit at the rim and black at the centre. ROCK_CORE
+-- is the cap's own black, exactly: the cap is then invisible as
+-- a shape and what a child sees is a letter down in a cavity,
+-- which is the whole point. Any value at all above black brings
+-- the rectangle back -- 0.13 was enough to draw its every edge.
 
 STAR = { 1, 1, 1 }
 ROCK = { 0.54, 0.54, 0.58 }
 ROCK_LIT = { 0.65, 0.65, 0.69 }
-ROCK_CORE = { 0.13, 0.13, 0.16 }
+ROCK_CORE = { 0, 0, 0 }
 HULL = { 0.29, 0.56, 0.83 }
 DOME = { 0.75, 0.89, 0.98 }
 LAMP = { 0.96, 0.77, 0.26 }
