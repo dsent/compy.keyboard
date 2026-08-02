@@ -29,6 +29,7 @@ STREAM = {
   taught = { },
   pend = { },
   burn = nil,
+  bfor = 0,
   level = 1,
   g = 0,
   sink = 0,
@@ -696,9 +697,22 @@ end
 -- pause later, so the flame never pops out of the same instant
 -- as a rock to shoot.
 
+-- The FIRST one of a level is not left to chance. At the rate
+-- that suits a level where the burning rock is a novelty, a
+-- roll per spawn misses it outright about a third of the time,
+-- and a feature a child meets only sometimes is one no lesson
+-- can build on. So the first spawn on a level that schedules
+-- them always books one; the notch's chance carries the rest.
+-- STREAM.bfor remembers the level that debut was spent on, so
+-- climbing or a notch change earns a fresh one.
+
 function streamArmBurn()
   if streamHostileAloft() then return end
-  if love.math.random() >= streamDangerChance() then return end
+  local p = streamDangerChance()
+  if p <= 0 then return end
+  local due = STREAM.bfor ~= STREAM.level
+  if not due and love.math.random() >= p then return end
+  STREAM.bfor = STREAM.level
   STREAM.burn = streamDelay() / 2
 end
 
@@ -758,6 +772,7 @@ function streamReset()
   STREAM.lastx = nil
   STREAM.pend = { }
   STREAM.burn = nil
+  STREAM.bfor = 0
   STREAM.phase = "play"
   STREAM.after = nil
   STREAM.hold = 0
@@ -837,11 +852,20 @@ end
 -- and nothing that was about to reach the field lands the
 -- instant play resumes.
 
-function streamResume()
+-- Everything currently in the air, gone: the rocks, the
+-- wreckage waiting to be drawn, the booked respawns and any
+-- burning rock on its way. What refills it is streamTopUp, at
+-- whatever the level is by then.
+
+function streamClearSky()
   STREAM.caps = { }
   STREAM.struck = { }
   STREAM.pend = { }
   STREAM.burn = nil
+end
+
+function streamResume()
+  streamClearSky()
   STREAM.after = nil
   STREAM.hold = 0
   STREAM.phase = "play"
@@ -853,9 +877,13 @@ end
 
 -- A teacher notch change is difficulty, so it lands at once:
 -- the key set and the field colour change on the spot and the
--- progression starts again at level 1. Rocks already in flight
--- keep the speed they were given and still count, so nothing
--- vanishes out from under a child mid-answer.
+-- progression starts again at level 1.
+
+-- The sky starts clean with it, exactly as it does at a level
+-- change. Level 1 holds ONE rock, and leaving the four that
+-- were up there falling shows a crowded sky over a game that
+-- has just said it is back to the beginning. Respawns already
+-- booked go too: they belong to the ladder that just ended.
 
 function streamOnNotch(delta)
   local old = notchGet(STREAM_GAME.id)
@@ -868,6 +896,7 @@ function streamOnNotch(delta)
     streamRestart()
     return
   end
+  streamClearSky()
   STREAM.level = 1
   STREAM.g = 0
   STREAM.sink = 0
