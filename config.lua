@@ -110,13 +110,13 @@ KEYSETS.press_tab = { "tab" }
 -- Fixed menu order (ids). Display labels are localized in
 -- locale.lua.
 
--- Asteroids takes the falling-caps slot Hunt held and Dangerous
--- Asteroids takes Skip's, so every other game keeps the digit a
--- run sheet already names.
+-- Asteroids takes the falling-caps slot Hunt held, and its
+-- burning rocks now cross the same sky, so the set is eight
+-- games and Hide and Train follow Bubble directly.
 
 MENU_ORDER = {
   "press", "find", "astro", "alt", "words", "bubble",
-  "danger", "hide", "train"
+  "hide", "train"
 }
 
 -- Per-game notch at program start. Unlisted games start at 0.
@@ -173,8 +173,8 @@ ALT_G = 30
 ALT_GTOP = 45
 GAUGE_LOWN_BIAS = 4
 
--- The falling-caps stream (stream.lua), which both Asteroids
--- variants ride. Caps enter at the top edge and fall until they
+-- The falling-caps stream (stream.lua), which Asteroids
+-- rides. Caps enter at the top edge and fall until they
 -- reach the force field; the y a cap enters at is here, and the
 -- line it stops at is the field arc below.
 
@@ -203,23 +203,6 @@ STREAM_CFG = {
   demote = 3
 }
 
--- Seconds to the next cap once the sky is empty. The cadence is
--- the fall time over the level, but a child who clears
--- everything early should get the next rock rather than an
--- empty screen for the rest of the interval.
-
-STREAM_REFILL = 0.9
-
--- The gap between caps is jittered either side of that interval
--- and each cap's fall is stretched or shortened by its own
--- offset, so the LANDINGS stay evenly spaced while the arrivals
--- do not. The pace a child feels is set by the deadlines, so it
--- is unchanged; only the rhythm stops being a metronome. A cap
--- brought in early by the refill is exempt and falls at the
--- plain speed -- clearing the sky has earned an early deadline.
-
-STREAM_JITTER = 0.45
-
 -- How far across the canvas a cap may drift on its way down.
 -- Ordinary caps come down at a slant, but a much steeper one
 -- than a burning rock's, so "falling on the shield" and
@@ -229,20 +212,37 @@ STREAM_DRIFT = 210
 
 -- Fall times (seconds, top edge to the field): the window a
 -- child has to find ONE key on a keyboard they cannot read
--- fluently, so they are generous. A long fall costs nothing in
--- dead time, because STREAM_REFILL below brings the next rock
--- along as soon as the sky is clear -- the fall sets the
--- ceiling on how long a rock may take, the child sets the
--- floor. The notch also sets the level CEILING (lmax) and the
--- `promote` threshold; the floor is always level 1.
--- Caps-to-win is promote * lmax (10/18/21/32/36).
+-- fluently, so they are generous. The sky holds min(level,
+-- ncap) rocks; a rock leaving it books its replacement after
+-- a pause drawn between dlo and dhi, the spread tightening
+-- with the level -- so the fall sets the ceiling on how long
+-- a rock may take and the child sets the pace. The notch also
+-- sets the level CEILING (lmax) and the `promote` threshold;
+-- the floor is always level 1.
+-- Caps-to-win is promote * lmax (10/18/28/40/45).
+--
+-- `danger` is the chance, per ordinary spawn, that a burning
+-- rock crosses the sky at that level (stream.lua). Negative
+-- notches never see one. At notch 0 the ladder ends on one
+-- EXTRA level -- ncap stays put -- where the burning rock
+-- debuts as a novelty; the positive notches meet it earlier
+-- and end on a level where it is frequent.
 
 STREAM_NOTCH = { }
-STREAM_NOTCH[-2] = { fall = 20.0, lmax = 2, promote = 5 }
-STREAM_NOTCH[-1] = { fall = 16.0, lmax = 3, promote = 6 }
-STREAM_NOTCH[0] = { fall = 14.0, lmax = 3, promote = 7 }
-STREAM_NOTCH[1] = { fall = 10.0, lmax = 4, promote = 8 }
-STREAM_NOTCH[2] = { fall = 7.0, lmax = 4, promote = 9 }
+STREAM_NOTCH[-2] = { fall = 23.0, lmax = 2, ncap = 2,
+  promote = 5, dlo = 1.8, dhi = 4.0 }
+STREAM_NOTCH[-1] = { fall = 18.0, lmax = 3, ncap = 3,
+  promote = 6, dlo = 1.4, dhi = 3.5 }
+STREAM_NOTCH[0] = { fall = 16.0, lmax = 4, ncap = 3,
+  promote = 7, dlo = 1.0, dhi = 3.0,
+  danger = { [4] = 0.12 } }
+STREAM_NOTCH[1] = { fall = 11.5, lmax = 5, ncap = 4,
+  promote = 8, dlo = 0.75, dhi = 2.5,
+  danger = { [3] = 0.10, [4] = 0.12, [5] = 0.25 } }
+STREAM_NOTCH[2] = { fall = 8.0, lmax = 5, ncap = 4,
+  promote = 9, dlo = 0.6, dhi = 2.0,
+  danger = { [1] = 0.08, [2] = 0.10, [3] = 0.12,
+    [4] = 0.15, [5] = 0.30 } }
 
 -- The key set by notch, on the shared ladder: notch 0 is the
 -- full set and the negative notches limit it by physical row. A
@@ -567,9 +567,9 @@ FIELD_RAMP[4] = { 1.00, 0.40, 0.46 }
 -- is going; take the flame away and the crossing line still
 -- says it.
 --
--- One arrives in the MIDDLE of the gap between two ordinary
--- rocks, never alongside one, and only sometimes -- so it
--- breaks the stream's rhythm instead of joining it.
+-- One is booked by an ordinary spawn, half a pause behind it,
+-- by the notch's per-level `danger` chance -- and only one at
+-- a time, aloft or booked (stream.lua).
 --
 -- Aim y is the band the arc's clearance table settles: at 428
 -- to 448 the rock centre clears the arc by 74 to 91 px against
@@ -583,7 +583,6 @@ FIELD_RAMP[4] = { 1.00, 0.40, 0.46 }
 DANGER_AIM_LO = 428
 DANGER_AIM_HI = 448
 DANGER_FAR = 0.55
-DANGER_CHANCE = 0.15
 DANGER_TRAIL = 7
 DANGER_TRAIL_GAP = 0.55
 DANGER_SPIKES = 9

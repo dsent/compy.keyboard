@@ -28,7 +28,6 @@ LOCALE.en = {
     alt = "Alt characters",
     words = "Words & phrases",
     bubble = "Blow the bubble",
-    danger = "Dangerous asteroids",
     hide = "Hide and seek",
     train = "Load the train"
   },
@@ -51,12 +50,6 @@ LOCALE.en = {
       .. "bubble.\nLet go while the bubble fits the ring.\n\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
-    danger = "Shoot the rocks falling on the shield.\n"
-      .. "The burning ones fly past it -- let them go.\n"
-      .. "Shooting one wastes your shot.\n\n"
-      .. "Alt+P  pause\n"
-      .. "Shift+Esc  back to the menu\n"
-      .. "Ctrl+Alt+↑ faster   Ctrl+Alt+↓ slower",
     hide = "Keys hide behind the crates. One peeks out\n"
       .. "at a time, and you may press any of them,\n"
       .. "shown or hidden. Take as long as you like.\n\n"
@@ -70,7 +63,9 @@ LOCALE.en = {
     astro = "Shoot the falling rocks by typing their\n"
       .. "keys, in any order, before they reach the\n"
       .. "shield. The gun reloads after every shot,\n"
-      .. "and a miss reloads slower.\n\n"
+      .. "and a miss reloads slower.\n"
+      .. "Burning rocks fly PAST the shield --\n"
+      .. "let them go; shooting one costs you.\n\n"
       .. "Alt+P  pause\n"
       .. "Shift+Esc  back to the menu\n"
       .. "Ctrl+Alt+↑ faster   Ctrl+Alt+↓ slower"

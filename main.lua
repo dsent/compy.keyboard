@@ -78,7 +78,6 @@ SCENE_FILE.astro = "astro.lua"
 SCENE_FILE.alt = "alt.lua"
 SCENE_FILE.words = "words.lua"
 SCENE_FILE.bubble = "bubble.lua"
-SCENE_FILE.danger = "danger.lua"
 SCENE_FILE.hide = "hide.lua"
 SCENE_FILE.train = "train.lua"
 

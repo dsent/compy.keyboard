@@ -1,20 +1,21 @@
 -- stream.lua
 
 -- The falling-caps stream. Capital keycaps ride rocks down from
--- the top edge at a constant, even cadence and the child types
--- them, in any order, before they reach the force field. There
--- are no waves: every cap carries its own position and its own
--- lifetime, the spawn interval is the fall time divided by the
--- level, and the level is therefore the number of caps in
--- flight.
+-- the top edge and the child types them, in any order, before
+-- they reach the force field. The sky holds a fixed number of
+-- rocks for the level: shooting one books its replacement after
+-- a short random pause, so the sky stays full at the child's
+-- own pace and never piles up past it. There are no waves and
+-- no shared clock; every cap carries its own lifetime.
 --
 -- The teacher's NOTCH is difficulty: fall speed, the level
--- ceiling, the gauge threshold and the key set. The child's
--- GAUGE is progression: a clean shot adds one, a cap that
--- reaches the field takes one away.
+-- ceiling, the gauge threshold, the key set, and how often a
+-- burning rock crosses the sky. The child's GAUGE is
+-- progression: a clean shot adds one, a cap that reaches the
+-- field takes one away.
 --
--- This file is the stream only. The scene both Asteroids
--- variants play on is astrocore.lua.
+-- This file is the stream only. The scene it plays on is
+-- astrocore.lua.
 
 ensureFile("props.lua")
 
@@ -26,8 +27,7 @@ STREAM = {
   recent = { },
   chars = { },
   taught = { },
-  wait = 0,
-  jit = 0,
+  pend = { },
   burn = nil,
   level = 1,
   g = 0,
@@ -619,26 +619,87 @@ function streamShootable()
   return false
 end
 
--- A burning rock arrives in the MIDDLE of the gap between two
--- ordinary ones, and only sometimes, so it comes out of the
--- stream's order rather than alongside a cap to shoot.
+-- The sky holds min(level, ncap) rocks. A rock leaving the sky
+-- books its replacement after a pause drawn between the
+-- notch's bounds, the spread tightening as the level rises.
+-- The pace is therefore the child's own, and the sky can never
+-- pile up past the slot count however a round goes.
 
-function streamArmBurn()
-  STREAM.burn = nil
-  if not STREAM_GAME.danger then return end
-  if love.math.random() >= DANGER_CHANCE then return end
-  STREAM.burn = STREAM.wait / 2
+function streamSlots()
+  return math.min(STREAM.level, streamCfg().ncap)
 end
 
--- A cleared sky shortens the gap, so a burning rock already
--- booked for the middle of it has to move up with it -- or it
--- would arrive after the next ordinary rock instead of between
--- the two.
+function streamDelay()
+  local cfg = streamCfg()
+  local span = (cfg.dhi - cfg.dlo) / STREAM.level
+  return cfg.dlo + love.math.random() * span
+end
 
-function streamHurryBurn()
-  if not STREAM.burn then return end
-  local half = STREAM.wait / 2
-  if half < STREAM.burn then STREAM.burn = half end
+function streamLiveNormals()
+  local n = 0
+  for _, c in ipairs(STREAM.caps) do
+    if not c.hostile and not c.dead then n = n + 1 end
+  end
+  return n
+end
+
+-- Booked respawns cascade behind the longest one already
+-- waiting: a volley of shots comes back as rocks filing in,
+-- never as a volley of rocks. Run every update, this is also
+-- what fills a fresh level and refits the sky after a notch
+-- change -- there is no other arming path.
+
+function streamTopUp()
+  local base = 0
+  for _, t in ipairs(STREAM.pend) do
+    if t > base then base = t end
+  end
+  while streamLiveNormals() + #STREAM.pend < streamSlots() do
+    base = base + streamDelay()
+    STREAM.pend[#STREAM.pend + 1] = base
+  end
+end
+
+function streamTickSlots(dt)
+  for i = #STREAM.pend, 1, -1 do
+    STREAM.pend[i] = STREAM.pend[i] - dt
+    if STREAM.pend[i] <= 0 then
+      table.remove(STREAM.pend, i)
+      streamSpawnCap(streamCfg().fall)
+      streamArmBurn()
+    end
+  end
+end
+
+-- How often a burning rock crosses at this notch and level.
+-- Negative notches never see one; the default notch meets it
+-- only on its final level, as a novelty.
+
+function streamDangerChance()
+  local sched = streamCfg().danger
+  if not sched then return 0 end
+  return sched[STREAM.level] or 0
+end
+
+-- One burning rock at a time, aloft or booked. Two flames at
+-- once is a scan this audience should not be asked to make.
+
+function streamHostileAloft()
+  if STREAM.burn then return true end
+  for _, c in ipairs(STREAM.caps) do
+    if c.hostile and not c.dead then return true end
+  end
+  return false
+end
+
+-- An ordinary spawn sometimes books a burning rock, half a
+-- pause later, so the flame never pops out of the same instant
+-- as a rock to shoot.
+
+function streamArmBurn()
+  if streamHostileAloft() then return end
+  if love.math.random() >= streamDangerChance() then return end
+  STREAM.burn = streamDelay() / 2
 end
 
 function streamTickBurn(dt)
@@ -647,39 +708,6 @@ function streamTickBurn(dt)
   if STREAM.burn > 0 then return end
   STREAM.burn = nil
   streamSpawnHostile()
-end
-
--- One spawn per interval, and the interval is the fall time
--- divided by the level -- which is the same statement as "the
--- level is how many caps are in the sky". Clearing the sky
--- early brings the next one along instead of leaving a child
--- watching nothing for the rest of the interval.
-
--- The gap to the next cap, jittered either side of the notch's
--- interval. The offset is carried, so the gap absorbs both this
--- cap's and the next one's -- which is what keeps the LANDINGS
--- evenly spaced while the arrivals wander.
-
-function streamArmNext()
-  local i = streamCfg().fall / STREAM.level
-  local prev = STREAM.jit
-  local j = (love.math.random() * 2 - 1) * STREAM_JITTER * i
-  STREAM.jit = j
-  STREAM.wait = i + j - prev
-end
-
-function streamTickSpawn(dt)
-  STREAM.wait = STREAM.wait - dt
-  local lull = STREAM_REFILL < STREAM.wait
-  if lull and not streamShootable() then
-    STREAM.wait = STREAM_REFILL
-    STREAM.jit = 0
-    streamHurryBurn()
-  end
-  if STREAM.wait > 0 then return end
-  streamSpawnCap(streamCfg().fall - STREAM.jit)
-  streamArmNext()
-  streamArmBurn()
 end
 
 -- The finishing stretch: caps still fall and still answer to
@@ -710,7 +738,8 @@ function streamUpdate(dt)
     streamTickFinish(dt)
     return
   end
-  streamTickSpawn(dt)
+  streamTopUp()
+  streamTickSlots(dt)
   streamTickBurn(dt)
 end
 
@@ -727,8 +756,7 @@ function streamReset()
   STREAM.count = 0
   STREAM.breaches = 0
   STREAM.lastx = nil
-  STREAM.wait = 0
-  STREAM.jit = 0
+  STREAM.pend = { }
   STREAM.burn = nil
   STREAM.phase = "play"
   STREAM.after = nil
@@ -812,8 +840,7 @@ end
 function streamResume()
   STREAM.caps = { }
   STREAM.struck = { }
-  STREAM.wait = STREAM_REFILL
-  STREAM.jit = 0
+  STREAM.pend = { }
   STREAM.burn = nil
   STREAM.after = nil
   STREAM.hold = 0
