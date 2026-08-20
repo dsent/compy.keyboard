@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# .compy/build -- emit the shipped Compy projects from this
+# single source repo (the .compy/build convention).
+#
+# Invoked by the host build as:
+#     cd <repo> && .compy/build <out-dir>
+# with an absolute, fresh <out-dir>. It populates
+#     <out-dir>/keyboard/   and   <out-dir>/k/
+# each a valid Compy project (a direct main.lua), named
+# exactly as its manifest entry. Works relative to its own
+# location, is deterministic, and needs no network.
+#
+# k is the same program under a name a beginner can type:
+# one letter instead of eight. The game exists to teach
+# typing, so reaching it cannot demand the skill it teaches.
+#
+set -eu
+
+SRC="$(cd "$(dirname "$0")/.." && pwd)"
+OUT="${1:?usage: .compy/build <out-dir> (absolute, fresh)}"
+
+emit() {
+  local d="$OUT/$1"
+  mkdir -p "$d"
+  cp "$SRC"/*.lua "$d/"
+  cp "$SRC/README.md" "$d/"
+}
+
+emit keyboard
+emit k
+echo "emitted $OUT/keyboard $OUT/k" >&2
