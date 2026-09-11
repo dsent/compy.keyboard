@@ -79,12 +79,18 @@ function menuDraw()
   menuDrawList()
 end
 
+-- The digit that opens a game claims its key: gotoScene runs
+-- inside this handler, so the digit's own textinput can land on
+-- the game just opened, whose first target is already live, and
+-- be judged as a typed answer. Whoever consumes a key owns it,
+-- as a chord owns its trigger.
 function menuKeypressed(k)
   local n = tonumber(k)
   if not n then return end
   if n == 0 then n = 10 end
   local id = MENU_ORDER[n]
   if id and sceneAvailable(id) then
+    spendGlyph(k)
     gotoScene(id)
   end
 end

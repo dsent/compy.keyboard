@@ -237,7 +237,7 @@ function trainKeypressed(k)
   if LOAD.phase ~= "wait" then return end
   if k == gaugeCurrent(TRAIN) then
     trainHit(k)
-  elseif not isMod(k) and k ~= "capslock" then
+  elseif not Key.is_mod(k) and k ~= "capslock" then
     trainWrong(k)
   end
 end

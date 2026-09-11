@@ -55,6 +55,11 @@ function introUpdate(dt)
   end
 end
 
+-- Any key finishes the typewriter early -- a lone Shift too. A
+-- lone Alt does not reach here: appKeypressed filters it, since
+-- "alt+*" cannot take a bare Alt press and the chord test it
+-- replaced did. The Shift/Alt asymmetry is the game's own and
+-- is left as it is, not "fixed" into a second difference.
 function introKeypressed(k)
   if INTRO.phase ~= "ready" then
     introFinish()

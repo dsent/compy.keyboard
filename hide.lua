@@ -272,7 +272,7 @@ function hideKeypressed(k)
   local i = hideInRotation(k)
   if i then
     hideHit(k, i)
-  elseif not isMod(k) and k ~= "capslock" then
+  elseif not Key.is_mod(k) and k ~= "capslock" then
     hideWrong(k)
   end
 end

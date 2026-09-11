@@ -7,8 +7,13 @@
 -- current hardware). A scene may suppress the hint/overlay
 -- (its own completion screen) via noHint() -> true.
 
+-- Alt+H is a chord that is HELD, not one that fires, so it is
+-- asked rather than bound: the help widget (this repo calls it
+-- the overlay) is shown for exactly as long as the keys are,
+-- and it cannot wedge on a lost release.
 function helpHeld()
-  return INPUT.held.h and INPUT.alt and not INPUT.ctrl
+  local h = Key.any_pressed("h")
+  return h and Key.alt() and not Key.ctrl()
 end
 
 -- True while the help overlay is on screen. main pauses the

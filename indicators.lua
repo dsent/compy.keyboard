@@ -18,8 +18,11 @@ function isUpperChar(t)
   return t == string.upper(t) and t ~= string.lower(t)
 end
 
--- Reconcile from one produced letter and the Shift state read
--- at the moment textinput fired (edge-tracked, not isDown).
+-- Reconcile from one produced letter and the Shift state its
+-- caller read when textinput fired. That state is asked of the
+-- keyboard, so a Shift released inside the same event batch can
+-- read as already up -- accepted, since the next letter fixes
+-- the estimate.
 function capsReconcile(letter, shift_held)
   local up = isUpperChar(letter)
   CAPS_STATE.on = (up ~= shift_held)

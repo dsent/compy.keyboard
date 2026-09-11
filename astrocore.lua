@@ -142,7 +142,7 @@ function astroKeypressed(k)
     astroShootPast(cap)
   elseif cap then
     astroShoot(cap)
-  elseif not isMod(k) and k ~= "capslock" then
+  elseif not Key.is_mod(k) and k ~= "capslock" then
     astroBlank()
     streamWrongPress(k)
   end

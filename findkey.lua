@@ -129,7 +129,7 @@ function fkKeypressed(st, cfg, k)
   if not gaugeGlowing(st) then return end
   if k == gaugeCurrent(st) then
     fkHit(st, cfg, k)
-  elseif not isMod(k) and k ~= "capslock" then
+  elseif not Key.is_mod(k) and k ~= "capslock" then
     fkWrong(st, cfg, k)
   end
 end

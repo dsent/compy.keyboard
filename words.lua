@@ -142,12 +142,10 @@ function wordsExpected()
 end
 
 -- The physical key a target glyph is produced on: space for a
--- space, the lowercase key for a letter (incl. a capital), else
--- the glyph itself (an unshifted punctuation key).
+-- space, a letter's lowercase key, a shifted symbol's unshifted
+-- key, else the glyph itself.
 function wordsBaseKey(ch)
-  if ch == " " then return "space" end
-  if isAlphaChar(ch) then return string.lower(ch) end
-  return ch
+  return glyphBaseKey(ch)
 end
 
 -- The gauge filled: celebrate and show the level-up screen.
@@ -215,10 +213,10 @@ function wordsBad()
 end
 
 -- Printable glyphs are judged here (every Words target is
--- printable). The inputStale guard drops a held/released or
--- chord glyph, exactly as Alt does.
+-- printable). spendGlyph takes one glyph per press and drops
+-- the rest, exactly as Alt does: a held key types once.
 function wordsTextinput(ch)
-  if inputStale(wordsBaseKey(ch)) then return end
+  if spendGlyph(wordsBaseKey(ch)) then return end
   if wordsDone() then return end
   local want = wordsExpected()
   if want == "" then return end

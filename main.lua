@@ -1,8 +1,8 @@
 -- keyboard: the program a 4-6 year-old launches to meet the
 -- keyboard. One program: a typewriter intro, a mini-game menu,
--- and the mini-games. main.lua defines the LOVE callbacks once
--- and dispatches to the active scene after reserved-chord
--- handling; scenes are loaded once here at boot.
+-- and the mini-games. main.lua defines update/draw and loads
+-- the scenes once here at boot; the keyboard/text callbacks are
+-- compy.input hooks and shortcuts, registered in input.lua.
 
 gfx = love.graphics
 
@@ -86,10 +86,20 @@ inputInit()
 
 -- Suppress the system pointer: relative mode keeps it off the
 -- screen edges so the Android nav/status bars never reveal.
--- The keyboard uses no mouse; the runner restores it on exit.
+-- The keyboard uses no mouse.
+-- Relative mode is REAL device state: it outlives the run and
+-- lands in whatever the project exits to, and the runner does
+-- not put it back, so this restores what it found.
+-- compy.before_exit fires on every stop path including Ctrl+Esc
+-- but NOT on a raise -- so a run that ends by raising leaves
+-- the mode on, and the next run restores that faithfully.
 -- TODO(root-access): replace with trackpad disable on entry.
 
+POINTER_RELATIVE_WAS = love.mouse.getRelativeMode()
 love.mouse.setRelativeMode(true)
+compy.before_exit = function()
+  love.mouse.setRelativeMode(POINTER_RELATIVE_WAS)
+end
 if DEBUG then pcall(dbgBoot) end
 gotoScene("intro")
 
@@ -117,14 +127,20 @@ function updateStep(dt)
   sceneUpdate(dt)
 end
 
+-- inputTick releases claims whose key the keyboard reports up.
+-- It runs HERE, not in updateStep, which returns early before
+-- the first draw, while paused, and while the help widget
+-- (this repo's overlay) is shown -- and showing it is a HELD
+-- Alt+H, so a claim would outlive its key in ordinary use.
 function love.update(dt)
   DBG_FRAME = DBG_FRAME + 1
-  if not DEBUG then 
-    return updateStep(dt) 
+  inputTick()
+  if not DEBUG then
+    return updateStep(dt)
   end
   local ok, err = pcall(updateStep, dt)
-  if not ok 
-  then dbgLogErr("UPDATE", err) 
+  if not ok
+  then dbgLogErr("UPDATE", err)
   end
 end
 
@@ -155,16 +171,4 @@ function love.draw()
   end
   gfx.pop()
   DREW_ONCE = true
-end
-
-function love.keypressed(k)
-  appKeypressed(k)
-end
-
-function love.keyreleased(k)
-  appKeyreleased(k)
-end
-
-function love.textinput(t)
-  appTextinput(t)
 end

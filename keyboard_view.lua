@@ -283,7 +283,7 @@ kbBuildCells()
 
 -- Effective case of letter keycaps: upper iff Caps XOR Shift.
 function capsEffectiveUpper()
-  if INPUT.shift then return not CAPS_STATE.on end
+  if Key.shift() then return not CAPS_STATE.on end
   return CAPS_STATE.on
 end
 

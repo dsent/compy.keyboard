@@ -9,8 +9,7 @@
 -- constant. A wrong input knocks (once per target). Same
 -- press-count gauge, level-up screen, pastel, and exit hint as
 -- Press/Find (findkey.lua); folds the Caps/Shift games. The
--- first
--- few Shift-requiring targets show an inline Shift hint
+-- first few Shift-requiring targets show an inline Shift hint
 -- (hints.lua); Ctrl+Alt+H re-arms it.
 
 -- Append a glyph group's targets to a round's master set.
@@ -43,12 +42,6 @@ ALT_KEYTARGET = {
   backspace = true, tab = true, ["return"] = true
 }
 
--- Reverse SHIFT_MAP: a symbol target's base key (the burst).
-ALT_BASE = { }
-for base, sym in pairs(SHIFT_MAP) do
-  ALT_BASE[sym] = base
-end
-
 function altIsKeyTarget(item)
   return ALT_KEYTARGET[item] == true
 end
@@ -58,7 +51,7 @@ end
 -- digits, unshifted punctuation, space, and the non-printing
 -- keys do not.
 function altNeedsShift(item)
-  return isUpperChar(item) or ALT_BASE[item] ~= nil
+  return isUpperChar(item) or GLYPH_BASE[item] ~= nil
 end
 
 -- The physical key a target is produced on, for the success
@@ -67,10 +60,7 @@ end
 -- a letter or digit itself.
 function altBaseKey(item)
   if altIsKeyTarget(item) then return item end
-  if item == " " then return "space" end
-  if ALT_BASE[item] then return ALT_BASE[item] end
-  if isAlphaChar(item) then return string.lower(item) end
-  return item
+  return glyphBaseKey(item)
 end
 
 -- The top-band keycap label for a target: a friendly name for
@@ -117,8 +107,9 @@ end
 
 -- Teacher chord (Ctrl+Alt+H): re-arm the hint budget for the
 -- next few shifted characters, restart the finger sweep, and
--- play a soft blip. Any chord glyph is dropped by the Alt/Ctrl
--- guard in appTextinput, so nothing trails into play.
+-- play a soft blip. Reached through this scene's onHint entry:
+-- the chord is a shortcut, so it never becomes scene input, and
+-- its 'h' cannot trail in either -- the shortcut claims it.
 function altHintReenable()
   ALT.hint = ALT_HINT_MORE
   ALT.htime = 0
@@ -175,16 +166,12 @@ end
 -- glyph, however made. Non-printing targets ignore textinput
 -- (keypressed judges them).
 --
--- inputStale drops a glyph whose producing key is held or was
--- just released. A held key keeps emitting textinput (the IDE
--- sends textinput before the keypress, so a repeat's key is
--- already held); and a final key-repeat glyph can trail just
--- after the key's release. That stops a held wrong key knocking
--- each frame, a held right key bleeding a miss onto the next
--- target, and a chord key's trailing glyph (e.g. after Alt+H)
--- fumbling the live target.
+-- spendGlyph takes one glyph per press and drops the repeats
+-- until the keyboard reports the key up: a held wrong key
+-- knocks once, a held right key does not bleed a miss onto the
+-- next target, and a chord's trailing glyph cannot fumble one.
 function altTextinput(ch)
-  if inputStale(altBaseKey(ch)) then return end
+  if spendGlyph(altBaseKey(ch)) then return end
   if fkDone(ALT) then return end
   if not gaugeGlowing(ALT) then return end
   if altIsKeyTarget(gaugeCurrent(ALT)) then return end
@@ -204,20 +191,18 @@ function altPlayKey(k)
   if not altIsKeyTarget(gaugeCurrent(ALT)) then return end
   if k == gaugeCurrent(ALT) then
     altHit()
-  elseif not isMod(k) and k ~= "capslock" then
+  elseif not Key.is_mod(k) and k ~= "capslock" then
     altWrong()
   end
 end
 
--- Ctrl+Alt+H re-arms the hint. On the level-up screen only Tab
--- is handled (no printable replay key, so nothing trails into
--- the next level); any stray glyph there is dropped by
--- altTextinput's fkDone guard anyway.
+-- On the level-up screen only Tab is handled (no printable
+-- replay key, so nothing trails into the next level); any stray
+-- glyph there is dropped by altTextinput's fkDone guard anyway.
+-- Ctrl+Alt+H is not matched here any more: it is a shortcut
+-- (input.lua) that calls onHint below, so this scene sees no
+-- chord at all.
 function altKeypressed(k)
-  if k == "h" and INPUT.ctrl and INPUT.alt then
-    altHintReenable()
-    return
-  end
   if fkDone(ALT) then
     fkDoneKey(ALT, ALT_CFG, k)
     return
@@ -241,7 +226,7 @@ end
 -- not then point at Shift.
 function altHintReady(item)
   if isAlphaChar(item) then return capsEffectiveUpper() end
-  return INPUT.shift
+  return Key.shift()
 end
 
 -- The hint's keyboard glows: while the base key is not yet
@@ -251,7 +236,7 @@ end
 -- ready with no Shift, so Shift is not lit then).
 function altHintDeco(deco)
   if altHintReady(gaugeCurrent(ALT)) then
-    if INPUT.shift then
+    if Key.shift() then
       deco.lshift = { bg = COL_WARM_DIM }
       deco.rshift = { bg = COL_WARM_DIM }
     end
@@ -312,5 +297,6 @@ registerScene("alt", {
   keypressed = altKeypressed,
   textinput = altTextinput,
   onNotch = altOnNotch,
+  onHint = altHintReenable,
   noHint = altDone
 })

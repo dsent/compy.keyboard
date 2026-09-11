@@ -144,11 +144,16 @@ function bubbleKeypressed(k)
   if k == gaugeCurrent(BUBBLE) then
     BUB.key = k
     BUB.t = 0
-  elseif not isMod(k) and k ~= "capslock" then
+  elseif not Key.is_mod(k) and k ~= "capslock" then
     fkWrong(BUBBLE, BUBBLE_CFG, k)
   end
 end
 
+-- The one judge in the game that keys on the release EVENT --
+-- a chosen channel, not a platform limit.
+-- The caution: a release lost to a focus change leaves BUB.key
+-- set with no release coming. bubbleGrow's timeout pops the
+-- bubble a moment later: the cost is a pop the child retries.
 function bubbleKeyreleased(k)
   if k ~= BUB.key then return end
   bubbleRelease()
