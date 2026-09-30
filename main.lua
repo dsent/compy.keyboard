@@ -86,20 +86,11 @@ inputInit()
 
 -- Suppress the system pointer: relative mode keeps it off the
 -- screen edges so the Android nav/status bars never reveal.
--- The keyboard uses no mouse.
--- Relative mode is REAL device state: it outlives the run and
--- lands in whatever the project exits to, and the runner does
--- not put it back, so this restores what it found.
--- compy.before_exit fires on every stop path including Ctrl+Esc
--- but NOT on a raise -- so a run that ends by raising leaves
--- the mode on, and the next run restores that faithfully.
+-- The keyboard uses no mouse. The IDE resets the mouse
+-- whenever the program stops.
 -- TODO(root-access): replace with trackpad disable on entry.
 
-POINTER_RELATIVE_WAS = love.mouse.getRelativeMode()
 love.mouse.setRelativeMode(true)
-compy.before_exit = function()
-  love.mouse.setRelativeMode(POINTER_RELATIVE_WAS)
-end
 if DEBUG then pcall(dbgBoot) end
 gotoScene("intro")
 
