@@ -100,9 +100,15 @@ function inputInit()
   register_reserved()
 end
 
+-- Esc steps back one level: a game goes back to the menu, and
+-- the menu and the intro, the program's top level, leave it for
+-- the console, as Ctrl+Q does from anywhere. Esc acts at a fresh
+-- press only, so a held Esc that reached the menu stays there.
 function goBack()
   if isGameScene(ACTIVE) then
     gotoScene("menu")
+  else
+    stop()
   end
 end
 
