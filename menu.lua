@@ -2,8 +2,8 @@
 -- derived structurally from the scenes registered in this
 -- build: an id is listed iff its scene is registered, so
 -- omit-not-disable is guaranteed by construction. The digit is
--- the id's fixed position in MENU_ORDER. Esc is ignored here
--- (the menu is the program's top level).
+-- the id's fixed position in MENU_ORDER. The menu is the
+-- program's top level, so Esc here leaves the program (goBack).
 
 -- The digit that opens an entry. Ten games exhaust the row, so
 -- the tenth answers to 0, as numbered lists have always done.
