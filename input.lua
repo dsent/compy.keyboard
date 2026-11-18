@@ -68,8 +68,7 @@ local function register_reserved()
   local notch_down = fn.stop_here(fn.ignore_repeat(function()
     notchAdjust(-1)
   end))
-  sc["shift+escape"] = back
-  sc["alt+shift+escape"] = back
+  sc["escape"] = back
   sc["ctrl+alt+up"] = notch_up
   sc["ctrl+alt+shift+up"] = notch_up
   sc["ctrl+alt+down"] = notch_down

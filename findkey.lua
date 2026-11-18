@@ -2,7 +2,7 @@
 -- key, Find the key). It drives the press-count learning engine
 -- (gauge.lua), the keycap target, the chime + burst, the
 -- firework (firework.lua), the level-up screen, and the
--- persistent Shift+Esc hint. Each scene owns a state table (st:
+-- persistent Esc hint. Each scene owns a state table (st:
 -- pulse, burst, fw, plus the gauge fields) and a cfg
 -- ({ id, notch, lo, hi, g, gtop }); the only per-scene
 -- difference is the keyboard decoration the scene passes to
@@ -147,7 +147,7 @@ function fkOnNotch(st, cfg, delta)
 end
 
 -- Subtle exit affordance during play: a light chip behind dark
--- text so Shift+Esc stays legible over any pastel background.
+-- text so Esc stays legible over any pastel background.
 -- Anchored left but clear of the clipped left edge (x >= 6).
 function fkDrawExitHint()
   local font = getFont(FONT_HINT)
@@ -172,8 +172,7 @@ function fkDrawWinScreen()
   drawBandText(STR.good_job, { 120, 200 },
     getFont(FONT_HEAD), COL_WARM)
   drawKeyHint("return", STR.replay, { 250, 300 }, COL_TEXT)
-  drawChordHint({ "lshift", "escape" }, STR.to_menu,
-    { 320, 370 }, COL_TEXT)
+  drawKeyHint("escape", STR.to_menu, { 320, 370 }, COL_TEXT)
 end
 
 -- The level screen: the compliment and the Tab cue, nothing

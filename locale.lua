@@ -19,7 +19,7 @@ LOCALE.en = {
   replay = "→ play again",
   to_menu = "→ back to the menu",
   help_hint = "Hold F1 for help",
-  back_hint = "Shift+Esc → menu",
+  back_hint = "Esc → menu",
   paused = "Paused",
   games = {
     press = "Press the key",
@@ -33,32 +33,32 @@ LOCALE.en = {
   },
   help = {
     press = "Press the key that glows.\n\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     find = "Find the key shown above, then press it.\n\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     alt = "Make the letter or symbol shown above.\n\n"
       .. "Hold Shift for capitals and symbols.\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     words = "Type the word or phrase shown above.\n\n"
       .. "Hold Shift for a capital.\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     bubble = "Hold the key that glows to blow up the "
       .. "bubble.\nLet go while the bubble fits the ring.\n\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     hide = "Keys hide behind the crates. One peeks out\n"
       .. "at a time, and you may press any of them,\n"
       .. "shown or hidden. Take as long as you like.\n\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     train = "Press the key floating over the platform.\n"
       .. "It rides down as cargo, and a full train\n"
       .. "leaves. Take as long as you like.\n\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑/↓  change difficulty",
     astro = "Shoot the falling rocks by typing their\n"
       .. "keys, in any order, before they reach the\n"
@@ -67,7 +67,7 @@ LOCALE.en = {
       .. "Burning rocks fly PAST the shield --\n"
       .. "let them go; shooting one costs you.\n\n"
       .. "Alt+P  pause\n"
-      .. "Shift+Esc  back to the menu\n"
+      .. "Esc  back to the menu\n"
       .. "Ctrl+Alt+↑ faster   Ctrl+Alt+↓ slower"
   }
 }
