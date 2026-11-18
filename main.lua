@@ -120,9 +120,9 @@ end
 
 -- inputTick releases claims whose key the keyboard reports up.
 -- It runs HERE, not in updateStep, which returns early before
--- the first draw, while paused, and while the help widget
--- (this repo's overlay) is shown -- and showing it is a HELD
--- Alt+H, so a claim would outlive its key in ordinary use.
+-- the first draw, while paused, and while the help overlay is
+-- shown -- and Alt+P, which pauses, claims its P, so a claim
+-- would outlive its key in ordinary use.
 function love.update(dt)
   DBG_FRAME = DBG_FRAME + 1
   inputTick()
