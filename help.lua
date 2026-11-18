@@ -1,19 +1,17 @@
--- In-game help. A small "Hold Alt+H for help" hint sits along
--- the bottom edge of every mini-game. HOLDING Alt+H shows a
--- calm overlay that vanishes as soon as the keys are
--- released -- an ephemeral peek, never a stuck modal (see
--- the overlay principle in docs/compy-ux-principles.md).
--- Alt+H is the interim help chord (F-keys are blocked on
--- current hardware). A scene may suppress the hint/overlay
--- (its own completion screen) via noHint() -> true.
+-- In-game help. A small "Hold F1 for help" hint sits along
+-- the bottom edge of every mini-game. HOLDING F1 shows a calm
+-- overlay that vanishes as soon as the key is released -- an
+-- ephemeral peek, never a stuck modal. A scene may suppress
+-- the hint/overlay (its own completion screen) via
+-- noHint() -> true.
 
--- Alt+H is a chord that is HELD, not one that fires, so it is
--- asked rather than bound: the help widget (this repo calls it
--- the overlay) is shown for exactly as long as the keys are,
--- and it cannot wedge on a lost release.
+-- F1 is a key that is HELD, not one that fires, so it is
+-- asked rather than bound: the overlay is shown for exactly
+-- as long as the key is down, and it cannot wedge on a lost
+-- release. Its press is taken by a shortcut (input.lua), so
+-- no scene judges it as a key.
 function helpHeld()
-  local h = Key.any_pressed("h")
-  return h and Key.alt() and not Key.ctrl()
+  return Key.any_pressed("f1")
 end
 
 -- True while the help overlay is on screen. main pauses the

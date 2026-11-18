@@ -29,8 +29,8 @@
 -- renderer needs it from draw, where there is no event to
 -- consult.
 
--- A chord's trigger is claimed when the chord is taken: Alt+H,
--- then letting go of Alt, leaves H repeating, and those
+-- A chord's trigger is claimed when the chord is taken: Alt+P,
+-- then letting go of Alt, leaves P repeating, and those
 -- characters are not a typed answer. Claiming twice is free.
 local function claimChord(k)
   spendGlyph(k)
@@ -56,6 +56,8 @@ end
 -- through the onHint descriptor entry, the way ctrl+alt+up
 -- reaches onNotch. Being a shortcut it is taken in EVERY scene,
 -- including the ones that judge key targets.
+-- F1 is the help key (help.lua): it is held and asked, and its
+-- press is taken here so that no scene judges it.
 local function register_reserved()
   local fn = compy.input.fn
   local sc = compy.input.shortcuts.keypressed
@@ -87,6 +89,7 @@ local function register_reserved()
   end)
   sc["ctrl+alt+h"] = hint
   sc["ctrl+alt+shift+h"] = hint
+  sc["f1"] = fn.stop_here()
 end
 
 function inputInit()
