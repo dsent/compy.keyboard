@@ -84,11 +84,9 @@ SCENE_FILE.train = "train.lua"
 notchInit()
 inputInit()
 
--- Suppress the system pointer: relative mode keeps it off the
--- screen edges so the Android nav/status bars never reveal.
--- The keyboard uses no mouse. The IDE resets the mouse
--- whenever the program stops.
--- TODO(root-access): replace with trackpad disable on entry.
+-- The keyboard game uses no mouse: relative mode keeps the
+-- system pointer out of the picture. The IDE resets the
+-- mouse whenever the program stops.
 
 love.mouse.setRelativeMode(true)
 if DEBUG then pcall(dbgBoot) end
